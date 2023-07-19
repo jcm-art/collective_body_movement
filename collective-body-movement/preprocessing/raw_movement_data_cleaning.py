@@ -10,7 +10,8 @@ class CollectiveBodyDataCleaner:
         # Initialize input and output
         self.input_path = pathlib.Path(input_path)
         self.output_directory = pathlib.Path(output_path)
-        self.output_path = self.output_directory /'movement_database.csv'
+        self.output_path = self.output_directory /'raw_movement_database.csv'
+        self.skipped_output_path = self.output_directory /'raw_movement_skipped_database.csv'
         self._log_output(f"Input path: {self.input_path}")
         self._log_output(f"Output path: {self.output_directory}")
 
@@ -20,38 +21,39 @@ class CollectiveBodyDataCleaner:
 
         # Import Data
         self.movementdf = pd.DataFrame()
-        self.missing_data_paths = []
+        self.skippeddf = pd.DataFrame(columns=['dataset_path','num_entries','reason_skipped'])
 
-    def import_data(self,):
+    def import_data(self,fast_debug=False, fast_debug_limit=10):
+        counter = 0
+
         for path in self.paths:
-            single_df = pd.read_csv(path, skiprows=1, delimiter=";",names=[
-                "time","headpos","leftpos","rightpos","headRot","leftrot","rightpos1","chapitre","bigballpos","leftballscount","rightballscount"
-            ])  ## pandas as pd
-
-            row, _ = single_df.shape
-            if row <=3:
-                self._log_output(f"Skipping {path}, no data provided")
-                self.missing_data_paths.append(path)
+            if fast_debug and counter > fast_debug_limit:
                 continue
             else:
-                self._log_output(f"Adding {path} to dataframe.")
-                # Clean Dataframe
-                single_df = self._clean_dataframe(single_df)
-                single_df = self._add_metadata(single_df,path)
-                
-                # Add to overall dataframe
-                self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
+                single_df = pd.read_csv(path, skiprows=1, delimiter=";",names=[
+                    "time","headpos","leftpos","rightpos","headRot","leftrot","rightpos1","chapitre","bigballpos","leftballscount","rightballscount"
+                ])  ## pandas as pd
 
-            # return single_df
+                row, _ = single_df.shape
+                if row <=2:
+                    self._log_output(f"Skipping {path}, no data provided")
+                    self.skippeddf.loc[len(self.skippeddf.index)] = [path, row, "Datafile is empty"] 
+                    continue
+                else:
+                    self._log_output(f"Adding {path} to dataframe.")
+                    # Clean Dataframe
+                    single_df = self._clean_dataframe(single_df)
+                    single_df = self._add_metadata(single_df,path)
+                    
+                    # Add to overall dataframe
+                    self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
+            counter += 1
 
     def save_clean_data(self):
+        self._log_output("Saving raw database and skipped file information")
         self.output_path.parent.mkdir(parents=True, exist_ok=True)  
         self.movementdf.to_csv(self.output_path)  
-
-        with open(self.output_directory/'missing_data_list.txt', mode='wt', encoding='utf-8') as myfile:
-            for lines in self.missing_data_paths:
-                print(lines, file = myfile)
-        myfile.close
+        self.skippeddf.to_csv(self.skipped_output_path)  
 
     def _get_data_paths(self, filepath, filetype):
         for root, dirs, files in os.walk(filepath):
@@ -143,5 +145,5 @@ if __name__ == "__main__":
         input_path="bin/data/DATA.2023.06.26/",
         output_path="data/movement_database/")
     
-    cbdc.import_data()
+    cbdc.import_data(fast_debug=False, fast_debug_limit=50)
     cbdc.save_clean_data()

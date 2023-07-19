@@ -88,7 +88,7 @@ if __name__=="__main__":
     print("Analyzing data from collective body movement.")
 
     cbma = CollectiveBodyMovementAnalysis(
-        movement_database_path="data/movement_database/movement_database.csv",
+        movement_database_path="data/movement_database/raw_movement_database.csv",
         plot_output_directory="data/analysis/")
     
     cbma.generate_scatter_plots()    
