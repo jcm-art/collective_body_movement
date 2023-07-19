@@ -145,5 +145,5 @@ if __name__ == "__main__":
         input_path="bin/data/DATA.2023.06.26/",
         output_path="data/movement_database/")
     
-    cbdc.import_data(fast_debug=False, fast_debug_limit=50)
+    cbdc.import_data(fast_debug=True, fast_debug_limit=10)
     cbdc.save_clean_data()

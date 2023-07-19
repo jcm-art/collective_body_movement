@@ -7,7 +7,7 @@ import colorsys
 
 
 
-class CollectiveBodyMovementAnalysis:
+class CollectiveBodyRawMovementAnalysis:
 
     def __init__(self, movement_database_path, plot_output_directory) -> None:
         self.movement_database = pathlib.Path(movement_database_path)
@@ -22,10 +22,7 @@ class CollectiveBodyMovementAnalysis:
         client_list = self.movementdf['client_number'].unique()
         num_clients = len(client_list)
 
-        # Generate plot colors
-        HSV_tuples = [(x*1.0/num_clients, 0.5, 0.5) for x in range(num_clients)]
-        RGB_tuples = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
-        print(RGB_tuples)
+        RGB_tuples = self._get_rgb_tuples(num_clients)
 
         print(client_list)
         fig, axs = plt.subplots(figsize=(12, 4))
@@ -46,6 +43,9 @@ class CollectiveBodyMovementAnalysis:
         column_list = ["headpos_x", "headpos_y", "headpos_z"]
         collection_list = self.movementdf['data_collection_example'].unique()
 
+        # Get colors
+        RGB_tuples = self._get_rgb_tuples(len(column_list))
+
         # Make output directory for plots
         random_output = self.plot_output_directory/"random_plots"
         random_output.mkdir(parents=True, exist_ok=True)  
@@ -59,11 +59,14 @@ class CollectiveBodyMovementAnalysis:
 
             client_data = self.movementdf.loc[self.movementdf['data_collection_example'] == collection_list[random_collection_num]]
 
+            color_num = 0
             for column in column_list:
-                client_data.plot(x="timestamp_from_start", y=column, kind='scatter', ax=axs)                   
+                client_data.plot(x="timestamp_from_start", y=column, kind='scatter', color=RGB_tuples[color_num], ax=axs)   
+                color_num += 1                
             
             axs.set_xlabel("Time (s)")          
-            axs.set_ylabel("Head Position X/Y/Z (m)")          
+            axs.set_ylabel("Head Position X/Y/Z (m)")    
+            axs.legend(column_list)      
             fig.savefig(random_output/f"plot{counter}.png")         
             # plt.show() 
             plt.close(fig) 
@@ -83,11 +86,16 @@ class CollectiveBodyMovementAnalysis:
         # plt.show() 
         plt.close(fig) 
 
+    def _get_rgb_tuples(self, n_colors):
+        # Generate plot colors
+        HSV_tuples = [(x*1.0/n_colors, 0.5, 0.5) for x in range(n_colors)]
+        RGB_tuples = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+        return RGB_tuples
 
 if __name__=="__main__":
-    print("Analyzing data from collective body movement.")
+    print("Analyzing data from collective body raw movement data.")
 
-    cbma = CollectiveBodyMovementAnalysis(
+    cbma = CollectiveBodyRawMovementAnalysis(
         movement_database_path="data/movement_database/raw_movement_database.csv",
         plot_output_directory="data/analysis/")
     
