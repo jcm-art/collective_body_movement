@@ -29,4 +29,5 @@ fi
 source cbenv/bin/activate
 
 # Install Python dependencies
-pip install pandas
+pip3 install pandas
+pip3 install matplotlib

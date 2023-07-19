@@ -1,6 +1,7 @@
 import os
 import pathlib
 import pandas as pd
+import numpy as np
 
 
 class CollectiveBodyDataCleaner:
@@ -41,6 +42,8 @@ class CollectiveBodyDataCleaner:
                 # Add to overall dataframe
                 self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
 
+            # return single_df
+
     def save_clean_data(self):
         self.output_path.parent.mkdir(parents=True, exist_ok=True)  
         self.movementdf.to_csv(self.output_path)  
@@ -80,6 +83,7 @@ class CollectiveBodyDataCleaner:
         # TODO - currently hardcoded, could cause issues with future data collections if structure changes
         data_collection_name = path.parts[2]
         subfolder = "_".join(path.parts[3:-1])
+        csv_file = path.parts[-1]
         client_number = int(path.name.split("+")[2][0])
         date_time_str = path.name.split("_")[-1][:-4]
         data_year = int(date_time_str.split("-")[0])
@@ -92,6 +96,7 @@ class CollectiveBodyDataCleaner:
         # Add metadata to dataframe
         df["data_collection_name"] = data_collection_name
         df["subfolder"] = subfolder
+        df["data_collection_example"] = csv_file
         df["client_number"] = client_number
         df["datafile_year"] = data_year
         df["datafile_day"] = data_day
@@ -102,6 +107,8 @@ class CollectiveBodyDataCleaner:
         # Convert time to datetime
         df["time"] =df["datafile_year"].apply(str)+ ":" + df["datafile_month"].apply(str)+ ":" + df["datafile_day"].apply(str)+ ":" + df["time"]
         df["time"] = pd.to_datetime(df["time"], format='%Y:%m:%d:%H:%M::%S:%f')
+        df["timestamp"] = df.time.values.astype(np.int64) // 10 ** 9
+        df["timestamp_from_start"] = df["timestamp"] - df["timestamp"].min()
 
 
         return df
