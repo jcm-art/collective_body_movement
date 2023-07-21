@@ -31,6 +31,12 @@ To run the full data ingest and processing pipeline, execute:
 python3 collective_body_movement/data_ingest_analysis_pipeline.py
 ``` 
 
+Data import can take a significant amount of time. To run a quick trial run with a reduced input, pass the argument:
+
+```
+--quick_run=True
+```
+
 for subsequent runs, the initial data ingest phase can be skipped to increase exeuction speed by passing the argument:
 
 ```
