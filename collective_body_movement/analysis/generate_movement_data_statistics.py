@@ -1,5 +1,6 @@
 import pandas as pd
 import pathlib
+import numpy as np
 
 class CollectiveBodyMovementDataStatistics:
 
@@ -18,20 +19,33 @@ class CollectiveBodyMovementDataStatistics:
         # Get all unique data collections in the database
         self._get_datacollect_list()
 
+        all_statistics_dict = {}
+
         # Iterate through each data collection
         for data_collect_name in self.data_collect_list:
             # Get a dataframe for each data collection
             single_df = self._get_single_dataframe(data_collect_name)
 
             # Generate statistics for each data collection
-            statistics_df = self._generate_statistics(single_df,data_collect_name)
+            statistics_dict = self._generate_statistics(single_df,data_collect_name)
 
-            # Append statistics to overall statistics dataframe
-            self.movement_statistics_df = pd.concat([self.movement_statistics_df, statistics_df], ignore_index=True)
+            # Append statistics to overall statistics dictionary
+            all_statistics_dict[data_collect_name] = statistics_dict
+
+        # Convert dictionary to dataframe
+        formatted_dict = {}
+        for k, v in all_statistics_dict.items():
+
+            for k2, v2 in v.items():
+                if k2 in formatted_dict:
+                    formatted_dict[k2].append(v2)
+                else:
+                    formatted_dict[k2] = [v2]
+
+        self.movement_statistics_df = pd.DataFrame.from_dict(formatted_dict)
 
     def save_statistics_df(self):
         self._log_output("Saving raw database and skipped file information")
-        print(self.movement_statistics_df)
         self.statistics_output_path.parent.mkdir(parents=True, exist_ok=True)  
         self.movement_statistics_df.to_csv(self.statistics_output_path)  
 
@@ -48,19 +62,73 @@ class CollectiveBodyMovementDataStatistics:
         # data_collection_name,subfolder,data_collection_example,client_number,
         # datafile_year,datafile_day,datafile_month,datafile_seconds,timestamp,timestamp_from_start
 
-        single_stats_df = pd.DataFrame([data_collect_name], columns=['data_collect_name'])
+        # TODO - replace dataframe with dictionary to improve speed
+        single_stats_dict = {}
+        # single_stats_df = pd.DataFrame([data_collect_name], columns=['data_collect_name'])
+        single_stats_dict['data_collect_name'] = data_collect_name
 
-        sensor_location = 'head'
-        motion_type = 'pos'
-        axes = 'x'
-        derived_val = 'mean'
-        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+        sensor_locations = ['head','left','right','bigball']
+        motion_types = ['pos','rot']
+        pos_axes = ['x','y','z']
+        rot_axes = ['i','j','k','l']
 
-        statistic = single_df[sensor_location + '_' + motion_type + '_' + axes].mean()
+        time_array = single_df['timestamp_from_start'].to_numpy()
+        time_step = (np.max(time_array)-np.min(time_array))/len(time_array) * 10**-9
 
-        single_stats_df[new_column] = statistic
+        for sensor_location in sensor_locations:
+            for motion_type in motion_types:
+                if motion_type == 'pos':
+                    motion_axes = pos_axes
+                elif motion_type == 'rot':
+                    motion_axes = rot_axes
+                
+                # Skip ball rotation, no data provided
+                if motion_type == 'rot' and sensor_location == 'bigball':
+                    continue
+                else:
+                    for axes in motion_axes:
+                        data_array = single_df[sensor_location + '_' + motion_type + '_' + axes].to_numpy()
+                        normalized_array = data_array - np.mean(data_array)
 
-        return single_stats_df
+                        # TODO - replace with dictionary of functions
+                        derived_val = 'mean'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.mean(data_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+                        derived_val = 'std'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.std(data_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+                        # Normalized data
+                        # TODO - data may be meaningless, same standard deviation as non-normalized data
+                        derived_val = 'normalized_mean'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.mean(normalized_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+                        derived_val = 'normalized_std'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.std(normalized_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+                        # Derivative data
+                        derived_val = 'speed_mean'
+                        derivative_array = np.diff(data_array)/time_step
+
+                        print(derivative_array)
+
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.mean(derivative_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+                        derived_val = 'speed_std'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        statistic = np.std(derivative_array)
+                        single_stats_dict[new_column] = statistic if statistic else np.nan
+
+        return single_stats_dict
 
     def _get_datacollect_list(self):
         self.data_collect_list = self.raw_movement_df['data_collection_example'].unique()

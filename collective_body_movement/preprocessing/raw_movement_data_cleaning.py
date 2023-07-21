@@ -113,7 +113,7 @@ class CollectiveBodyDataCleaner:
         # Convert time to datetime
         df["time"] =df["datafile_year"].apply(str)+ ":" + df["datafile_month"].apply(str)+ ":" + df["datafile_day"].apply(str)+ ":" + df["time"]
         df["time"] = pd.to_datetime(df["time"], format='%Y:%m:%d:%H:%M::%S:%f')
-        df["timestamp"] = df.time.values.astype(np.int64) // 10 ** 9
+        df["timestamp"] = df.time.values.astype(np.int64) ** 10
         start_time = df["timestamp"].min()
         df["timestamp_from_start"] = df["timestamp"] - start_time
 
