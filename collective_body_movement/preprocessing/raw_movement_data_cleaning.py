@@ -36,19 +36,29 @@ class CollectiveBodyDataCleaner:
                     "time","head_pos","left_pos","right_pos","head_rot","left_rot","right_rot","chapitre","bigball_pos","leftballscount","rightballscount"
                 ])  ## pandas as pd
 
-                row, _ = single_df.shape
-                if row <=2:
+                valid_dataframe, num_rows, error_code = self._pre_validate_dataframe(single_df)
+
+                if valid_dataframe == False:
                     self._log_output(f"Skipping {path}, no data provided")
-                    self.skippeddf.loc[len(self.skippeddf.index)] = [path, row, "Datafile is empty"] 
+                    self.skippeddf.loc[len(self.skippeddf.index)] = [path, num_rows, error_code] 
                     continue
                 else:
-                    self._log_output(f"Adding {path} to dataframe.")
+                    self._log_output(f"Checking {path} for dataframe.")
                     # Clean Dataframe
                     single_df = self._clean_dataframe(single_df)
                     single_df = self._add_metadata(single_df,path)
                     
-                    # Add to overall dataframe
-                    self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
+                    # Check cleaned data
+                    valid_dataframe, error_code = self._post_validate_dataframe(single_df)    
+
+                    if valid_dataframe == False:
+                        self._log_output(f"Skipping {path}, invalida data fround")
+                        self.skippeddf.loc[len(self.skippeddf.index)] = [path, num_rows, error_code] 
+                        continue
+                    else:
+                        # Add to overall dataframe
+                        self._log_output(f"Adding {path} to overall dataframe")
+                        self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
             counter += 1
 
     def save_clean_data(self):
@@ -62,6 +72,34 @@ class CollectiveBodyDataCleaner:
             for file in files:
                 if file.lower().endswith(filetype.lower()):
                     self.paths.append(pathlib.PurePath(root, file))
+
+    def _pre_validate_dataframe(self, df):
+        num_rows, _ = df.shape
+
+        # Check for empty dataframe
+        if num_rows <=2:
+            return False, num_rows, "Datafile is empty"
+        
+        # TODO - what can be validated here?
+        # Check for missing data - doesn't work, all have some missing data
+        #if df.isnull().values.any():
+        #    return False, num_rows, "Datafile contains missing values"
+
+        return True, num_rows, None
+    
+    def _post_validate_dataframe(self, df):
+        
+        # CHeck position values are within expected range
+        distance_threshold = 0.1
+        cartesian_dimensions = ['x','y','z']
+        sensor_types = ['head_pos','left_pos','right_pos']
+        for sensor in sensor_types:
+            for dimension in cartesian_dimensions:
+                target_column = f"{sensor}_{dimension}"
+                if df[target_column].max() - df[target_column].min() < distance_threshold:
+                    return False, f"{sensor} dimension {dimension} value range is too small"
+
+        return True, None
 
     def _clean_dataframe(self, df):
         # Remove incorrect header rows and missing data

@@ -27,7 +27,8 @@ class CollectiveBodyMovementDataStatistics:
             single_df = self._get_single_dataframe(data_collect_name)
 
             # Generate statistics for each data collection
-            statistics_dict = self._generate_statistics(single_df,data_collect_name)
+            statistics_dict = self._generate_basic_statistics(single_df,data_collect_name)
+            statistics_dict = self._add_advanced_statistics(single_df, statistics_dict)
 
             # Append statistics to overall statistics dictionary
             all_statistics_dict[data_collect_name] = statistics_dict
@@ -50,7 +51,7 @@ class CollectiveBodyMovementDataStatistics:
         self.movement_statistics_df.to_csv(self.statistics_output_path)  
 
 
-    def _generate_statistics(self, single_df, data_collect_name):
+    def _generate_basic_statistics(self, single_df, data_collect_name):
         # Available fields in raw movement database:
         # ,time,chapitre,leftballscount,rightballscount,
         # headpos_x,headpos_y,headpos_z,
@@ -101,23 +102,25 @@ class CollectiveBodyMovementDataStatistics:
                         statistic = np.std(data_array)
                         single_stats_dict[new_column] = statistic if statistic else np.nan
 
-                        # Normalized data
-                        # TODO - data may be meaningless, same standard deviation as non-normalized data
-                        derived_val = 'normalized_mean'
+                        # Spread data
+                        derived_val = 'normalized_max'
                         new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
-                        statistic = np.mean(normalized_array)
-                        single_stats_dict[new_column] = statistic if statistic else np.nan
+                        norm_max_statistic = np.max(normalized_array)
+                        single_stats_dict[new_column] = norm_max_statistic if norm_max_statistic else np.nan
 
-                        derived_val = 'normalized_std'
+                        derived_val = 'normalized_min'
                         new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
-                        statistic = np.std(normalized_array)
-                        single_stats_dict[new_column] = statistic if statistic else np.nan
+                        norm_min_statistic = np.min(normalized_array)
+                        single_stats_dict[new_column] = norm_min_statistic if norm_min_statistic else np.nan
+
+                        derived_val = 'range'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        range_statistic = norm_max_statistic-norm_min_statistic
+                        single_stats_dict[new_column] = range_statistic if range_statistic else np.nan
 
                         # Derivative data
                         derived_val = 'speed_mean'
                         derivative_array = np.diff(data_array)/time_step
-
-                        print(derivative_array)
 
                         new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
                         statistic = np.mean(derivative_array)
@@ -128,7 +131,37 @@ class CollectiveBodyMovementDataStatistics:
                         statistic = np.std(derivative_array)
                         single_stats_dict[new_column] = statistic if statistic else np.nan
 
+                        # Spread derivative data
+                        derived_val = 'max_speed'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        norm_max_statistic = np.max(derivative_array)
+                        single_stats_dict[new_column] = norm_max_statistic if norm_max_statistic else np.nan
+
+                        derived_val = 'min_speed'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        norm_min_statistic = np.min(derivative_array)
+                        single_stats_dict[new_column] = norm_min_statistic if norm_min_statistic else np.nan
+
+                        derived_val = 'range_speed'
+                        new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
+                        range_statistic = norm_max_statistic-norm_min_statistic
+                        single_stats_dict[new_column] = range_statistic if range_statistic else np.nan
+
         return single_stats_dict
+
+    def _add_advanced_statistics(self, single_df, statistics_dict):
+        x_array = single_df['head_pos_x'].to_numpy()
+        y_array = single_df['head_pos_y'].to_numpy()
+        z_array = single_df['head_pos_z'].to_numpy()
+
+        total_distance_traveled = 0
+
+        for i in range(len(x_array)-1):
+            total_distance_traveled += np.sqrt((x_array[i+1]-x_array[i])**2 + (y_array[i+1]-y_array[i])**2 + (z_array[i+1]-z_array[i])**2)
+
+        statistics_dict["total_distance_traveled"] = total_distance_traveled
+
+        return statistics_dict
 
     def _get_datacollect_list(self):
         self.data_collect_list = self.raw_movement_df['data_collection_example'].unique()
