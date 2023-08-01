@@ -16,7 +16,6 @@ class CollectiveBodyMovementStatisticsAnalysis:
         # Make output directories for plots
         self.plot_output_directory.mkdir(parents=True, exist_ok=True)  
 
-
         # Import Database
         self.movement_statistics_df = pd.read_csv(self.movement_statistics_database, index_col=0)
 

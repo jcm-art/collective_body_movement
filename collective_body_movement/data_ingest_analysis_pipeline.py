@@ -26,14 +26,18 @@ class CollectiveBodyDataPipeline:
         self.statistics_database_outputh_path.mkdir(parents=True, exist_ok=True)
         self.plot_output_directory.mkdir(parents=True, exist_ok=True)
 
-    def run_pipeline(self, skip_ingest, quick_run):
+    def run_pipeline(self, skip_ingest, quick_run, skip_plots):
         print(f"Skip ingest parameter is {skip_ingest}")
         if skip_ingest:
             self._log_output("Skipping data ingest")
         else:
             self.import_clean_data(quick_run=quick_run)
         self.generate_statistics()
-        self.generate_plots()
+        
+        if skip_plots:
+            self._log_output("Skipping plot generation")
+        else:
+            self.generate_plots()
 
     def import_clean_data(self, quick_run):
         self._log_output("Importing and cleaning data")
@@ -85,11 +89,13 @@ if __name__=="__main__":
     # Add arguments to pipeline execution
     parser.add_argument('--skip_raw_data_ingest',action='store_true', default=False) 
     parser.add_argument('--quick_run',action='store_true', default=False) 
+    parser.add_argument('--skip_plots',action='store_true', default=False) 
 
     # Get arguments from command
     aaa = parser.parse_args()
     skip_ingest_arg = aaa.skip_raw_data_ingest
     quick_run = aaa.quick_run
+    skip_plots = aaa.skip_plots
 
     # Initialize the pipeline
     cbdp = CollectiveBodyDataPipeline(
@@ -100,5 +106,5 @@ if __name__=="__main__":
     )
 
     # Run the pipeline with provided arguments
-    print(f"Running pipline with skip_ingest={skip_ingest_arg} and quick_run={quick_run}")
-    cbdp.run_pipeline(skip_ingest=skip_ingest_arg, quick_run=quick_run)
+    print(f"Running pipline with skip_ingest={skip_ingest_arg}, quick_run={quick_run}, and skip_plots={skip_plots}")
+    cbdp.run_pipeline(skip_ingest=skip_ingest_arg, quick_run=quick_run, skip_plots=skip_plots)
