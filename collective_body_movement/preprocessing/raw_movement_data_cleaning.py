@@ -160,7 +160,7 @@ class CollectiveBodyDataCleaner:
 
         return df
 
-    def _get_session_number(self, start_time, threshold=100):
+    def _get_session_number(self, start_time, threshold=100000000):
         '''Method to infer the session number based on the start time of the data collection. The
         threshold value gives a margin to account for different start times.'''
 
