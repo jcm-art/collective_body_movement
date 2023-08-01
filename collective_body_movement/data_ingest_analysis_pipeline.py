@@ -11,10 +11,20 @@ class CollectiveBodyDataPipeline:
 
     def __init__(self,
                  raw_data_path,
-                 raw_database_output_path) -> None:
+                 raw_database_output_path,
+                 statistics_database_output_path,
+                 plot_output_directory) -> None:
 
+        # Set paths
         self.raw_data_path = pathlib.Path(raw_data_path)
         self.raw_database_output_path = pathlib.Path(raw_database_output_path)
+        self.statistics_database_outputh_path = pathlib.Path(statistics_database_output_path)
+        self.plot_output_directory = pathlib.Path(plot_output_directory)
+
+        # Make directories if they don't exist
+        self.raw_database_output_path.mkdir(parents=True, exist_ok=True)
+        self.statistics_database_outputh_path.mkdir(parents=True, exist_ok=True)
+        self.plot_output_directory.mkdir(parents=True, exist_ok=True)
 
     def run_pipeline(self, skip_ingest, quick_run):
         print(f"Skip ingest parameter is {skip_ingest}")
@@ -30,15 +40,16 @@ class CollectiveBodyDataPipeline:
         cbdc = CollectiveBodyDataCleaner(
             input_path=self.raw_data_path,
             output_path=self.raw_database_output_path
-            )
+        )
         cbdc.import_data(fast_debug=quick_run, fast_debug_limit=10)
         cbdc.save_clean_data()
 
     def generate_statistics(self):
         self._log_output("Generating statistics")
+        # TODO make names static constants
         cbmds = CollectiveBodyMovementDataStatistics(
-            movement_database_path="data/movement_database/raw_movement_database.csv",
-            statistics_output_path="data/movement_database/movement_statistics_database.csv"
+            movement_database_path=self.raw_database_output_path/"raw_movement_database.csv",
+            statistics_output_path= self.statistics_database_outputh_path/"movement_statistics_database.csv"
         )
         cbmds.generate_statistics_database()
         cbmds.save_statistics_df()
@@ -46,16 +57,17 @@ class CollectiveBodyDataPipeline:
     def generate_plots(self):
         self._log_output("Generating plots")
         cbma = CollectiveBodyRawMovementAnalysis(
-            movement_database_path="data/movement_database/raw_movement_database.csv",
-            plot_output_directory="data/analysis/")
+            movement_database_path=self.raw_database_output_path/"raw_movement_database.csv",
+            plot_output_directory=self.plot_output_directory/"raw_movement_plots/",
+        )
 
         cbma.generate_scatter_plots()    
         cbma.generate_box_plots()
         cbma.generate_spot_plots()
 
         cbmsa = CollectiveBodyMovementStatisticsAnalysis(
-            movement_database_path="data/movement_database/movement_statistics_database.csv",
-            plot_output_directory="data/analysis/movement_statistics/")
+            movement_database_path=self.statistics_database_outputh_path/"movement_statistics_database.csv",
+            plot_output_directory=self.plot_output_directory/"movement_statistics_plots/")
 
         cbmsa.generate_histogram_plots()    
 
@@ -83,6 +95,8 @@ if __name__=="__main__":
     cbdp = CollectiveBodyDataPipeline(
         raw_data_path="bin/data/DATA.2023.06.26/",
         raw_database_output_path="data/movement_database/",
+        statistics_database_output_path="data/movement_database/",
+        plot_output_directory="data/analysis/"
     )
 
     # Run the pipeline with provided arguments

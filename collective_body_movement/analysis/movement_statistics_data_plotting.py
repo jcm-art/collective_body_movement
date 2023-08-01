@@ -13,6 +13,10 @@ class CollectiveBodyMovementStatisticsAnalysis:
         self.movement_statistics_database = pathlib.Path(movement_database_path)
         self.plot_output_directory = pathlib.Path(plot_output_directory)
 
+        # Make output directories for plots
+        self.plot_output_directory.mkdir(parents=True, exist_ok=True)  
+
+
         # Import Database
         self.movement_statistics_df = pd.read_csv(self.movement_statistics_database, index_col=0)
 
@@ -58,7 +62,7 @@ if __name__=="__main__":
 
     cbma = CollectiveBodyMovementStatisticsAnalysis(
         movement_database_path="data/movement_database/movement_statistics_database.csv",
-        plot_output_directory="data/analysis/movement_statistics/")
+        plot_output_directory="data/analysis/movement_statistics_plots/")
     
     cbma.generate_scatter_plots()    
     cbma.generate_box_plots()

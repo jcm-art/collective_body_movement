@@ -10,8 +10,14 @@ import colorsys
 class CollectiveBodyRawMovementAnalysis:
 
     def __init__(self, movement_database_path, plot_output_directory) -> None:
+        # Set Paths
         self.movement_database = pathlib.Path(movement_database_path)
         self.plot_output_directory = pathlib.Path(plot_output_directory)
+        self.random_output = self.plot_output_directory/"random_plots/"
+
+        # Make output directories for plots
+        self.random_output.mkdir(parents=True, exist_ok=True)  
+
 
         # Import Database
         self.movementdf = pd.read_csv(self.movement_database, index_col=0)
@@ -46,10 +52,6 @@ class CollectiveBodyRawMovementAnalysis:
         # Get colors
         RGB_tuples = self._get_rgb_tuples(len(column_list))
 
-        # Make output directory for plots
-        random_output = self.plot_output_directory/"random_plots"
-        random_output.mkdir(parents=True, exist_ok=True)  
-
         counter = 0
         while counter < num_plots:
 
@@ -67,7 +69,7 @@ class CollectiveBodyRawMovementAnalysis:
             axs.set_xlabel("Time (s)")          
             axs.set_ylabel("Head Position X/Y/Z (m)")    
             axs.legend(column_list)      
-            fig.savefig(random_output/f"plot{counter}.png")         
+            fig.savefig(self.random_output/f"plot{counter}.png")         
             # plt.show() 
             plt.close(fig) 
 
@@ -97,7 +99,7 @@ if __name__=="__main__":
 
     cbma = CollectiveBodyRawMovementAnalysis(
         movement_database_path="data/movement_database/raw_movement_database.csv",
-        plot_output_directory="data/analysis/")
+        plot_output_directory="data/analysis/raw_movement_plots/")
     
     cbma.generate_scatter_plots()    
     cbma.generate_box_plots()
