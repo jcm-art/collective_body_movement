@@ -18,12 +18,13 @@ class DataSummaryClass:
             'data_start_datetime': None,
             'data_start_abstime': None,
             'is_valid': None,
-            'error_code': None,
+            'error_codes': None,
             'num_frames': None,
             'elapsed_time': None,
             'chapter_1': None,
             'chapter_2': None,
             'chapter_3': None,
+            'chapter_4': None,
             'data_collection': None, # Upload time / data collection event
             'data_source': None, # Server or headset
             'data_path': data_path, # Path to data file
@@ -31,7 +32,10 @@ class DataSummaryClass:
 
     def set_data_parameter(self, field, new_value):
         if field in self.data_path_dict:
-            self.data_path_dict[field] = new_value
+            if field == "error_codes" and self.data_path_dict["error_codes"] is not None:
+                self.data_path_dict[field] = self.data_path_dict[field] + f", {new_value}"
+            else:
+                self.data_path_dict[field] = new_value
         else:
             raise Exception(f"Field {field} is not in the dictionary for {self.__class__.__name__}")
 
@@ -72,7 +76,6 @@ class CollectiveBodyDataCleaner:
 
         # Initialze conmtainers for data
         self.movementdf = pd.DataFrame()
-        self.skippeddf = pd.DataFrame(columns=['dataset_path','num_entries','reason_skipped'])
         self.data_summaries = []
 
     def import_data(self,fast_debug=False, fast_debug_limit=10):
@@ -145,24 +148,50 @@ class CollectiveBodyDataCleaner:
         # TODO - implement metadata extraction from data file
 
         # Get datetime from path name
-        path_datetime = data_summary.get_data_parameter('path_datetime')
+        dt_start_time = data_df['time'].min()
+        abs_start_time = data_df['timestamp'].min()
+        abs_end_time = data_df['timestamp'].max()
+        abs_elapsed_time = abs_end_time - abs_start_time
 
-        '''
-        # Add metadata to dataframe
-        df["file_name"] = data_collection_name
-        df["subfolder"] = subfolder
-        df["data_collection_example"] = csv_file
-        df["headset_number"] = headset_number
-        df["datafile_year"] = data_year
-        df["datafile_day"] = data_day
-        df["datafile_month"] = data_month
-        df["datafile_seconds"] = data_hour*24+data_minute*60+data_second
+        # Update data summary class timing information
+        data_summary.set_data_parameter('data_start_datetime', dt_start_time)
+        data_summary.set_data_parameter('data_start_abstime', abs_start_time)
+        data_summary.set_data_parameter('elapsed_time', abs_elapsed_time)
 
-        if self.path_session_numbers == False:
-            self.path_session_numbers[self.path_session_counter] = path_datetime
-            self.path_session_counter += 1
-            return self.path_session_counter-1
-        '''
+        # Check chapters
+        unique_chapters = data_df['chapitre'].unique()
+        chapter_1_present = False
+        chapter_2_present = False
+        chapter_3_present = False
+        chapter_4_present = False
+
+        if 1 in unique_chapters:
+            chapter_1_present = True
+        if 2 in unique_chapters:
+            chapter_2_present = True
+        if 3 in unique_chapters:
+            chapter_3_present = True
+        if 4 in unique_chapters:
+            chapter_4_present = True
+
+        data_summary.set_data_parameter('chapter_1', chapter_1_present)
+        data_summary.set_data_parameter('chapter_2', chapter_2_present)
+        data_summary.set_data_parameter('chapter_3', chapter_3_present)
+        data_summary.set_data_parameter('chapter_4', chapter_4_present)
+
+        # Note that chapter 4 not being present doesn't force a failure
+        if (chapter_1_present and chapter_2_present and chapter_3_present) == False:
+            data_summary.set_data_parameter('is_valid', False)
+            data_summary.set_data_parameter('error_codes', "Missing chapters")
+
+        if tuple(unique_chapters) != (1,2,3,4):
+            data_summary.set_data_parameter('is_valid', False)
+            data_summary.set_data_parameter('error_codes', "Too many chapters")
+
+        # Get session number from data file
+        session_number = self._get_data_session_number(abs_start_time)
+        data_summary.set_data_parameter('session_number_data', session_number)
+
         return data_summary 
 
 
@@ -177,19 +206,19 @@ class CollectiveBodyDataCleaner:
         else:
             self._log_output(f"Checking {path} for dataframe.")
             # Clean Dataframe
-            data_df = self._clean_dataframe(data_df)
+            data_df = self._clean_dataframe(data_df, data_summary)
 
             # Append extracted metadata to data summary from datafile
             data_summary = self._append_datafile_metadata(path, data_df, data_summary)
 
             # Check cleaned data
             # TODO - passs in data summary to check cleaned data
-            valid_dataframe, error_code = self._post_validate_dataframe(data_df)    
+            valid_dataframe, error_codes = self._post_validate_dataframe(data_df)    
 
             if valid_dataframe == False:
                 self._log_output(f"Skipping {path}, invalida data fround")
                 data_summary.set_data_parameter("is_valid", False)
-                data_summary.set_data_parameter("error_code", error_code)
+                data_summary.set_data_parameter("error_codes", error_codes)
                 return data_summary
 
         # Add to overall dataframe
@@ -215,9 +244,6 @@ class CollectiveBodyDataCleaner:
         # Save raw movement data
         self.movementdf.to_csv(self.cleaned_data_output_path)  
 
-        # Save skipped data - TODO, remove
-        self.skippeddf.to_csv(self.skipped_database)  
-
     def _get_data_paths(self, filepath, filetype):
         for root, dirs, files in os.walk(filepath):
             for file in files:
@@ -230,13 +256,13 @@ class CollectiveBodyDataCleaner:
         # Check size of dataframe
         if num_lines <= 2:
             data_summary.set_data_parameter('is_valid', False)
-            data_summary.set_data_parameter('error_code', "empty_dataset")
+            data_summary.set_data_parameter('error_codes', "empty_dataset")
         elif num_lines <= 1000:
             data_summary.set_data_parameter('is_valid', False)
-            data_summary.set_data_parameter('error_code', "short_dataset_expected_restart")
+            data_summary.set_data_parameter('error_codes', "short_dataset_expected_restart")
         else:        
             data_summary.set_data_parameter('is_valid', True)
-            data_summary.set_data_parameter('error_code', "non_empty_dataset")
+            data_summary.set_data_parameter('error_codes', "non_empty_dataset")
 
         data_summary.set_data_parameter('num_frames', num_lines-1)
         
@@ -246,6 +272,11 @@ class CollectiveBodyDataCleaner:
     def _pre_validate_dataframe(self, data_df, data_summary):
         # TODO - other pre-validation checks
         data_summary = self._length_validation(data_summary, data_df)
+
+        # Flag headset data as invalid
+        if data_summary.get_data_parameter('data_source') == "headset":
+            data_summary.set_data_parameter('is_valid', False)
+            data_summary.set_data_parameter('error_codes', "headset_data_expected_not_valid")
 
         return data_summary
     
@@ -267,8 +298,11 @@ class CollectiveBodyDataCleaner:
         # TODO - implement check for single data source in session
         pass
 
-    def _clean_dataframe(self, df):
+    def _clean_dataframe(self, df, data_summary):
         # Remove incorrect header rows and missing data
+        df['dataset_id'] = data_summary.get_data_parameter('dataset_id')
+        df['headset_number'] = data_summary.get_data_parameter('headset_number')
+        df['session_number'] = data_summary.get_data_parameter('session_number_path')
         df = df.dropna()
         df = df.reset_index(drop=True)
 
@@ -284,6 +318,27 @@ class CollectiveBodyDataCleaner:
                                        dimensions =['i','j','k','l'],
                                        remove_vals=["(",")"," "])
         
+        # Convert time to datetime
+        path_datetime = data_summary.get_data_parameter("path_datetime")
+        time_df = pd.DataFrame()
+        time_df['time'] = pd.to_datetime(df['time'], format="%H:%M::%S:%f")
+
+        time_df['year'] = path_datetime.year
+        time_df['month'] = path_datetime.month
+        time_df['day'] = path_datetime.day
+        time_df['hour'] = time_df['time'].dt.hour
+        time_df['minute'] = time_df['time'].dt.minute
+        time_df['second'] = time_df['time'].dt.second
+        time_df['microsecond'] = time_df['time'].dt.microsecond
+        time_df = time_df.drop(['time'], axis=1)
+        time_df = pd.to_datetime(time_df)
+        
+        # Set time values including elapsed time
+        df['time'] = pd.to_datetime(time_df)
+        df['timestamp'] = df['time'].values.astype(np.int64) // 10 ** 6 # Get time in miliseconds
+        start_time = df['timestamp'].min()
+        df['elapsed_time'] = df['time'].values.astype(np.int64) // 10 ** 6 - start_time
+
         return df
 
     def _get_path_session_number(self, path_datetime, threshold=500):
@@ -307,11 +362,10 @@ class CollectiveBodyDataCleaner:
         self.path_session_counter += 1
         return self.path_session_counter-1
 
-    def _get_data_session_number(self, start_time, threshold=100000000):
+    def _get_data_session_number(self, start_time, threshold=500):
         '''Method to infer the session number based on the start time of the data collection. The
         threshold value gives a margin to account for different start times.'''
         # TODO - fix to use datetime
-        return 0
 
         if bool(self.data_session_numbers)==False:
             self.data_session_numbers[self.data_session_counter] = start_time
@@ -360,4 +414,3 @@ if __name__ == "__main__":
     
     cbdc.import_data(fast_debug=True, fast_debug_limit=10)
     cbdc.save_clean_data()
-    print(f"session numbers {cbdc.path_session_numbers}")

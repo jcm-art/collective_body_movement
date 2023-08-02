@@ -35,7 +35,7 @@ class CollectiveBodyRawMovementAnalysis:
 
         for i in range(num_headsets):
             headset_data = self.movementdf.loc[self.movementdf['headset_number'] == headset_list[i]]
-            headset_data.plot(x="timestamp_from_start", y="head_pos_x", kind='scatter', color=RGB_tuples[i],s=1,ax=axs)                   
+            headset_data.plot(x="elapsed_time", y="head_pos_x", kind='scatter', color=RGB_tuples[i],s=1,ax=axs)                   
         
         axs.set_xlabel("Time (ns)")          
         axs.set_ylabel("Head Position X (cm)")    
@@ -47,7 +47,7 @@ class CollectiveBodyRawMovementAnalysis:
     def generate_spot_plots(self, num_plots=10):
         print("Generating spot plots")
         column_list = ["head_pos_x", "head_pos_y", "head_pos_z"]
-        collection_list = self.movementdf['data_collection_example'].unique()
+        collection_list = self.movementdf['dataset_id'].unique()
 
         # Get colors
         RGB_tuples = self._get_rgb_tuples(len(column_list))
@@ -59,11 +59,11 @@ class CollectiveBodyRawMovementAnalysis:
 
             fig, axs = plt.subplots(figsize=(12, 4))
 
-            headset_data = self.movementdf.loc[self.movementdf['data_collection_example'] == collection_list[random_collection_num]]
+            headset_data = self.movementdf.loc[self.movementdf['dataset_id'] == collection_list[random_collection_num]]
 
             color_num = 0
             for column in column_list:
-                headset_data.plot(x="timestamp_from_start", y=column, kind='scatter', color=RGB_tuples[color_num], ax=axs)   
+                headset_data.plot(x="elapsed_time", y=column, kind='scatter', color=RGB_tuples[color_num], ax=axs)   
                 color_num += 1                
             
             axs.set_xlabel("Time (s)")          

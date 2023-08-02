@@ -73,7 +73,7 @@ class CollectiveBodyMovementDataStatistics:
         pos_axes = ['x','y','z']
         rot_axes = ['i','j','k','l']
 
-        time_array = single_df['timestamp_from_start'].to_numpy()
+        time_array = single_df['elapsed_time'].to_numpy()
         time_step = (np.max(time_array)-np.min(time_array))/len(time_array) * 10**-9
 
         for sensor_location in sensor_locations:
@@ -164,10 +164,10 @@ class CollectiveBodyMovementDataStatistics:
         return statistics_dict
 
     def _get_datacollect_list(self):
-        self.data_collect_list = self.raw_movement_df['data_collection_example'].unique()
+        self.data_collect_list = self.raw_movement_df['dataset_id'].unique()
 
     def _get_single_dataframe(self,data_collect_name):
-        single_df = self.raw_movement_df.loc[self.raw_movement_df['data_collection_example'] == data_collect_name]
+        single_df = self.raw_movement_df.loc[self.raw_movement_df['dataset_id'] == data_collect_name]
         return single_df
 
     def _log_output(self, to_output):
