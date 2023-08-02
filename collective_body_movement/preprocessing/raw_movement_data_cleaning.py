@@ -2,7 +2,47 @@ import os
 import pathlib
 import pandas as pd
 import numpy as np
+import datetime
 
+
+class DataSummaryClass:
+
+    def __init__(self,dataset_id, data_path = None):
+        self.data_path_dict = {
+            'dataset_id': dataset_id,
+            'headset_number': None,
+            'session_number_path': None,
+            'session_number_data': None,
+            'path_datetime': None,
+            'path_abstime': None,
+            'data_start_datetime': None,
+            'data_start_abstime': None,
+            'is_valid': None,
+            'error_code': None,
+            'num_frames': None,
+            'elapsed_time': None,
+            'chapter_1': None,
+            'chapter_2': None,
+            'chapter_3': None,
+            'data_collection': None, # Upload time / data collection event
+            'data_source': None, # Server or headset
+            'data_path': data_path, # Path to data file
+        }
+
+    def set_data_parameter(self, field, new_value):
+        if field in self.data_path_dict:
+            self.data_path_dict[field] = new_value
+        else:
+            raise Exception(f"Field {field} is not in the dictionary for {self.__class__.__name__}")
+
+    def get_data_parameter(self, field):
+        if field in self.data_path_dict:
+            return self.data_path_dict[field]
+        else:
+            raise Exception(f"Field {field} is not in the dictionary for {self.__class__.__name__}")
+
+    def get_data_path_dict(self):
+        return self.data_path_dict
 
 class CollectiveBodyDataCleaner:
 
@@ -10,62 +50,173 @@ class CollectiveBodyDataCleaner:
         # Initialize input and output
         self.input_path = pathlib.Path(input_path)
         self.output_directory = pathlib.Path(output_path)
-        self.output_path = self.output_directory /'raw_movement_database.csv'
-        self.skipped_output_path = self.output_directory /'raw_movement_skipped_database.csv'
+
+        # Make directories if required
+        self.output_directory.mkdir(parents=True, exist_ok=True)
+
+        self.summary_database_output_path = self.output_directory /'raw_movement_summary_database.csv'
+        self.skipped_database = self.output_directory /'skipped_database.csv'
+        self.cleaned_data_output_path = self.output_directory /'raw_movement_database.csv'
         self._log_output(f"Input path: {self.input_path}")
         self._log_output(f"Output path: {self.output_directory}")
 
         # Get Filepaths
         self.paths = []
-        self.session_counter = 0
         self._get_data_paths(self.input_path, ".csv")
-        self.session_numbers = {}
 
-        # Import Data
+        # Initialize session tracking
+        self.path_session_counter = 0
+        self.path_session_numbers = {}
+        self.data_session_counter = 0
+        self.data_session_numbers = {}
+
+        # Initialze conmtainers for data
         self.movementdf = pd.DataFrame()
         self.skippeddf = pd.DataFrame(columns=['dataset_path','num_entries','reason_skipped'])
+        self.data_summaries = []
 
     def import_data(self,fast_debug=False, fast_debug_limit=10):
-        counter = 0
+        dataset_id = 0
 
         for path in self.paths:
-            if fast_debug and counter > fast_debug_limit:
-                continue
+
+            # Initialize Data Summary class
+            data_summary = DataSummaryClass(dataset_id,path)
+
+            # Generate Metadata from path
+            data_summary = self._append_path_name_metadata(path, data_summary)
+
+            # Read CSV file 
+            data_df = self._read_csv_to_dataframe(path)
+
+            # Skip full data ingest if fast debug in usage
+            if fast_debug and dataset_id > fast_debug_limit:
+                # For Quick Debugging, run only quick validation to check file length
+                data_summary = self._length_validation(data_summary, data_df)
             else:
-                single_df = pd.read_csv(path, skiprows=1, delimiter=";",names=[
-                    "time","head_pos","left_pos","right_pos","head_rot","left_rot","right_rot","chapitre","bigball_pos","leftballscount","rightballscount"
-                ])  ## pandas as pd
+                data_summary = self._import_movement_data(path, data_df, data_summary)
 
-                valid_dataframe, num_rows, error_code = self._pre_validate_dataframe(single_df)
+            # Add data summary to list 
+            self.data_summaries.append(data_summary.get_data_path_dict())
 
-                if valid_dataframe == False:
-                    self._log_output(f"Skipping {path}, no data provided")
-                    self.skippeddf.loc[len(self.skippeddf.index)] = [path, num_rows, error_code] 
-                    continue
-                else:
-                    self._log_output(f"Checking {path} for dataframe.")
-                    # Clean Dataframe
-                    single_df = self._clean_dataframe(single_df)
-                    single_df = self._add_metadata(single_df,path)
-                    
-                    # Check cleaned data
-                    valid_dataframe, error_code = self._post_validate_dataframe(single_df)    
+            dataset_id += 1
 
-                    if valid_dataframe == False:
-                        self._log_output(f"Skipping {path}, invalida data fround")
-                        self.skippeddf.loc[len(self.skippeddf.index)] = [path, num_rows, error_code] 
-                        continue
-                    else:
-                        # Add to overall dataframe
-                        self._log_output(f"Adding {path} to overall dataframe")
-                        self.movementdf = pd.concat([self.movementdf, single_df], ignore_index=True)
-            counter += 1
+    def _append_path_name_metadata(self, path, data_summary):
+        # Extract data aquisition and time labels
+        # TODO - currently hardcoded, could cause issues with future data collections if structure changes
+        data_collection_name = path.parts[2]
+        subfolder = "_".join(path.parts[3:-1])
+        headset_number = int(path.name.split("+")[2][0])
+        date_time_str = path.name.split("_")[-1][:-4]
+        data_year = int(date_time_str.split("-")[0])
+        data_day = int(date_time_str.split("-")[1])
+        data_month = int(date_time_str.split("-")[2])
+        data_hour = int(date_time_str.split("-")[4])
+        data_minute = int(date_time_str.split("-")[5])
+        data_second = int(date_time_str.split("-")[6])
+
+        path_datetime = datetime.datetime(data_year,data_month,data_day,data_hour,data_minute,data_second)
+
+        # Update data summary class timing information
+        data_summary.set_data_parameter('path_datetime', path_datetime)
+        data_summary.set_data_parameter('path_abstime', path_datetime.timestamp())
+
+        # Update data summary class data source information
+        data_source = "no data source found"
+        if "headset" in subfolder.lower():
+            data_source = "headset"
+        elif "server" in subfolder.lower():
+            data_source = "server"
+        data_summary.set_data_parameter('data_source', data_source)
+
+        # Update data summary class data collection information
+        data_summary.set_data_parameter('data_collection', data_collection_name)
+
+        # Update data summary class data headset number
+        data_summary.set_data_parameter('headset_number', headset_number)
+
+        # Determine session number based on path datetime
+        session_number = self._get_path_session_number(path_datetime)
+        data_summary.set_data_parameter('session_number_path', session_number)
+
+        return data_summary 
+
+    def _append_datafile_metadata(self, path, data_df, data_summary):
+        # TODO - implement metadata extraction from data file
+
+        # Get datetime from path name
+        path_datetime = data_summary.get_data_parameter('path_datetime')
+
+        '''
+        # Add metadata to dataframe
+        df["file_name"] = data_collection_name
+        df["subfolder"] = subfolder
+        df["data_collection_example"] = csv_file
+        df["headset_number"] = headset_number
+        df["datafile_year"] = data_year
+        df["datafile_day"] = data_day
+        df["datafile_month"] = data_month
+        df["datafile_seconds"] = data_hour*24+data_minute*60+data_second
+
+        if self.path_session_numbers == False:
+            self.path_session_numbers[self.path_session_counter] = path_datetime
+            self.path_session_counter += 1
+            return self.path_session_counter-1
+        '''
+        return data_summary 
+
+
+    def _import_movement_data(self, path, data_df, data_summary):
+        # Run pre-validation on dataframe
+        data_summary = self._pre_validate_dataframe(data_df, data_summary)
+
+        # Check if dataframe is valid
+        if data_summary.get_data_parameter("is_valid") == False:
+            self._log_output(f"Skipping {path}, no data provided")
+            return data_summary
+        else:
+            self._log_output(f"Checking {path} for dataframe.")
+            # Clean Dataframe
+            data_df = self._clean_dataframe(data_df)
+
+            # Append extracted metadata to data summary from datafile
+            data_summary = self._append_datafile_metadata(path, data_df, data_summary)
+
+            # Check cleaned data
+            # TODO - passs in data summary to check cleaned data
+            valid_dataframe, error_code = self._post_validate_dataframe(data_df)    
+
+            if valid_dataframe == False:
+                self._log_output(f"Skipping {path}, invalida data fround")
+                data_summary.set_data_parameter("is_valid", False)
+                data_summary.set_data_parameter("error_code", error_code)
+                return data_summary
+
+        # Add to overall dataframe
+        self._log_output(f"Adding {path} to overall dataframe")
+        self.movementdf = pd.concat([self.movementdf, data_df], ignore_index=True)
+        return data_summary
+
+    def _read_csv_to_dataframe(self, path):
+        # Read dataframe from csv path
+        single_df = pd.read_csv(path, skiprows=1, delimiter=";",names=[
+            "time","head_pos","left_pos","right_pos","head_rot","left_rot","right_rot","chapitre","bigball_pos","leftballscount","rightballscount"
+        ])
+
+        return single_df
 
     def save_clean_data(self):
-        self._log_output("Saving raw database and skipped file information")
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)  
-        self.movementdf.to_csv(self.output_path)  
-        self.skippeddf.to_csv(self.skipped_output_path)  
+        self._log_output("Saving raw database and data summary information")
+
+        # Save dataset summaries
+        self.data_summaries_df = pd.DataFrame.from_dict(self.data_summaries)
+        self.data_summaries_df.to_csv(self.summary_database_output_path)  
+
+        # Save raw movement data
+        self.movementdf.to_csv(self.cleaned_data_output_path)  
+
+        # Save skipped data - TODO, remove
+        self.skippeddf.to_csv(self.skipped_database)  
 
     def _get_data_paths(self, filepath, filetype):
         for root, dirs, files in os.walk(filepath):
@@ -73,19 +224,30 @@ class CollectiveBodyDataCleaner:
                 if file.lower().endswith(filetype.lower()):
                     self.paths.append(pathlib.PurePath(root, file))
 
-    def _pre_validate_dataframe(self, df):
-        num_rows, _ = df.shape
+    def _length_validation(self, data_summary, data_df):
+        num_lines = len(data_df)
 
-        # Check for empty dataframe
-        if num_rows <=2:
-            return False, num_rows, "Datafile is empty"
+        # Check size of dataframe
+        if num_lines <= 2:
+            data_summary.set_data_parameter('is_valid', False)
+            data_summary.set_data_parameter('error_code', "empty_dataset")
+        elif num_lines <= 1000:
+            data_summary.set_data_parameter('is_valid', False)
+            data_summary.set_data_parameter('error_code', "short_dataset_expected_restart")
+        else:        
+            data_summary.set_data_parameter('is_valid', True)
+            data_summary.set_data_parameter('error_code', "non_empty_dataset")
+
+        data_summary.set_data_parameter('num_frames', num_lines-1)
         
-        # TODO - what can be validated here?
-        # Check for missing data - doesn't work, all have some missing data
-        #if df.isnull().values.any():
-        #    return False, num_rows, "Datafile contains missing values"
+        return data_summary
+                    
 
-        return True, num_rows, None
+    def _pre_validate_dataframe(self, data_df, data_summary):
+        # TODO - other pre-validation checks
+        data_summary = self._length_validation(data_summary, data_df)
+
+        return data_summary
     
     def _post_validate_dataframe(self, df):
         
@@ -100,6 +262,10 @@ class CollectiveBodyDataCleaner:
                     return False, f"{sensor} dimension {dimension} value range is too small"
 
         return True, None
+    
+    def _post_ingest_validation(self):
+        # TODO - implement check for single data source in session
+        pass
 
     def _clean_dataframe(self, df):
         # Remove incorrect header rows and missing data
@@ -120,63 +286,46 @@ class CollectiveBodyDataCleaner:
         
         return df
 
-    def _add_metadata(self, df, path):
-        # Get data aquisition and time labels
-        # TODO - currently hardcoded, could cause issues with future data collections if structure changes
-        data_collection_name = path.parts[2]
-        subfolder = "_".join(path.parts[3:-1])
-        csv_file = path.parts[-1]
-        headset_number = int(path.name.split("+")[2][0])
-        date_time_str = path.name.split("_")[-1][:-4]
-        data_year = int(date_time_str.split("-")[0])
-        data_day = int(date_time_str.split("-")[1])
-        data_month = int(date_time_str.split("-")[2])
-        data_hour = int(date_time_str.split("-")[4])
-        data_minute = int(date_time_str.split("-")[5])
-        data_second = int(date_time_str.split("-")[6])
-
-        
-
-
-        # Add metadata to dataframe
-        df["file_name"] = data_collection_name
-        df["subfolder"] = subfolder
-        df["data_collection_example"] = csv_file
-        df["headset_number"] = headset_number
-        df["datafile_year"] = data_year
-        df["datafile_day"] = data_day
-        df["datafile_month"] = data_month
-        df["datafile_seconds"] = data_hour*24+data_minute*60+data_second
-
-        # Convert time to datetime
-        df["time"] =df["datafile_year"].apply(str)+ ":" + df["datafile_month"].apply(str)+ ":" + df["datafile_day"].apply(str)+ ":" + df["time"]
-        df["time"] = pd.to_datetime(df["time"], format='%Y:%m:%d:%H:%M::%S:%f')
-        df["timestamp"] = df.time.values.astype(np.int64)
-        start_time = df["timestamp"].min()
-        df["timestamp_from_start"] = df["timestamp"] - start_time
-
-        session_number = self._get_session_number(start_time)
-        df["data_collection_session_inferred"] = session_number
-
-        return df
-
-    def _get_session_number(self, start_time, threshold=100000000):
+    def _get_path_session_number(self, path_datetime, threshold=500):
         '''Method to infer the session number based on the start time of the data collection. The
-        threshold value gives a margin to account for different start times.'''
+        threshold value gives a margin to account for different start times. This method is based
+        on the datetime provided by the file path.'''
 
-        if bool(self.session_numbers)==False:
-            self.session_numbers[self.session_counter] = start_time
-            self.session_counter += 1
-            return self.session_counter-1
+        if bool(self.path_session_numbers)==False:
+            self.path_session_numbers[self.path_session_counter] = path_datetime.timestamp()
+            self.path_session_counter += 1
+            return self.path_session_counter-1
 
         # Check dictionary for start time to see if session already exists
-        for key, value in self.session_numbers.items():
+        for key, value in self.path_session_numbers.items():
+            timedelta_val = path_datetime.timestamp() - value
+            if abs(timedelta_val) < threshold:
+                return key
+        
+        # If session is not found, create new session in dictionary and return the key
+        self.path_session_numbers[self.path_session_counter] = path_datetime.timestamp()
+        self.path_session_counter += 1
+        return self.path_session_counter-1
+
+    def _get_data_session_number(self, start_time, threshold=100000000):
+        '''Method to infer the session number based on the start time of the data collection. The
+        threshold value gives a margin to account for different start times.'''
+        # TODO - fix to use datetime
+        return 0
+
+        if bool(self.data_session_numbers)==False:
+            self.data_session_numbers[self.data_session_counter] = start_time
+            self.data_session_counter += 1
+            return self.data_session_counter-1
+
+        # Check dictionary for start time to see if session already exists
+        for key, value in self.data_session_numbers.items():
             if abs(value - start_time) < threshold:
                 return key
             else:
-                self.session_numbers[self.session_counter] = start_time
-                self.session_counter += 1
-                return self.session_counter-1
+                self.data_session_numbers[self.data_session_counter] = start_time
+                self.data_session_counter += 1
+                return self.data_session_counter-1
 
 
     def _strip_split_columns(self, df,column_list, dimensions, remove_vals=["(",")"," "]):
@@ -211,3 +360,4 @@ if __name__ == "__main__":
     
     cbdc.import_data(fast_debug=True, fast_debug_limit=10)
     cbdc.save_clean_data()
+    print(f"session numbers {cbdc.path_session_numbers}")
