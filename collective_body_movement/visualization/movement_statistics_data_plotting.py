@@ -7,7 +7,7 @@ import colorsys
 
 
 
-class CollectiveBodyMovementStatisticsAnalysis:
+class CollectiveBodyMovementBasicStatisticsAnalysis:
 
     def __init__(self, movement_database_path, plot_output_directory) -> None:
         self.movement_statistics_database = pathlib.Path(movement_database_path)
@@ -60,7 +60,7 @@ class CollectiveBodyMovementStatisticsAnalysis:
 if __name__=="__main__":
     print("Analyzing data from collective body raw movement data.")
 
-    cbma = CollectiveBodyMovementStatisticsAnalysis(
+    cbma = CollectiveBodyMovementBasicStatisticsAnalysis(
         movement_database_path="data/movement_database/movement_statistics_database.csv",
         plot_output_directory="data/analysis/movement_statistics_plots/")
     
