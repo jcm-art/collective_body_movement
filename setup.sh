@@ -29,5 +29,20 @@ fi
 source cbenv/bin/activate
 
 # Install Python dependencies
+pip3 install --upgrade pip
+pip3 install numpy
 pip3 install pandas
 pip3 install matplotlib
+pip3 install PyInstaller
+
+# TODO - notebook install is broken
+# Install notebook
+# pip3 install --upgrade pyrsistent
+# pip3 install jsonschema     
+# pip3 install --upgrade jsonschema  
+# pip3 install ipykernel    
+# pip3 install jupyterlab
+
+# conda create --name cb_condaenv 
+# conda activate cb_condaenv  
+# conda install -c conda-forge jupyterlab
