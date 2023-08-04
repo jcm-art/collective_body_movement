@@ -13,20 +13,22 @@ class CollectiveBodyDataPipeline:
                  raw_data_path,
                  raw_database_output_path,
                  statistics_database_output_path,
-                 plot_output_directory) -> None:
+                 plot_output_directory,
+                 visualization_output_directory) -> None:
 
         # Set paths
         self.raw_data_path = pathlib.Path(raw_data_path)
         self.raw_database_output_path = pathlib.Path(raw_database_output_path)
         self.statistics_database_outputh_path = pathlib.Path(statistics_database_output_path)
         self.plot_output_directory = pathlib.Path(plot_output_directory)
+        self.visualization_output_directory = pathlib.Path(visualization_output_directory)
 
         # Make directories if they don't exist
         self.raw_database_output_path.mkdir(parents=True, exist_ok=True)
         self.statistics_database_outputh_path.mkdir(parents=True, exist_ok=True)
         self.plot_output_directory.mkdir(parents=True, exist_ok=True)
 
-    def run_pipeline(self, skip_ingest, quick_run, skip_plots, skip_raw_plots, skip_basic_plots):
+    def run_pipeline(self, skip_ingest, quick_run, skip_plots, skip_raw_plots, skip_basic_plots, skip_visualizations):
         print(f"Skip ingest parameter is {skip_ingest}")
         if skip_ingest:
             self._log_output("Skipping data ingest")
@@ -38,6 +40,11 @@ class CollectiveBodyDataPipeline:
             self._log_output("Skipping plot generation")
         else:
             self.generate_plots(skip_raw_plots, skip_basic_plots)
+
+        if skip_visualizations:
+            self._log_output("Skipping visualization generation")
+        else:
+            self.generate_visualizations()
 
     def import_clean_data(self, quick_run):
         self._log_output("Importing and cleaning data")
@@ -59,7 +66,7 @@ class CollectiveBodyDataPipeline:
         cbmds.save_statistics_dfs()
 
     def generate_plots(self, skip_raw_plots, skip_basic_plots):
-        self._log_output("Generating visualizations")
+        self._log_output("Generating plots")
 
         # Skip plots of raw statistics if enabled
         if skip_raw_plots==False:
@@ -81,6 +88,10 @@ class CollectiveBodyDataPipeline:
             # Generate histogram plots for all basic metrics
             cbmsa.generate_histogram_plots()    
 
+    def generate_visualizations(self):
+        self._log_output("Generating visualizations")
+        pass
+
     def _log_output(self, output):
         print(f"{__class__.__name__}: {output}")
 
@@ -98,6 +109,7 @@ if __name__=="__main__":
     parser.add_argument('--skip_plots',action='store_true', default=False) 
     parser.add_argument('--skip_raw_plots',action='store_true', default=False) 
     parser.add_argument('--skip_basic_plots',action='store_true', default=False) 
+    parser.add_argument('--skip_visualizations',action='store_true', default=False) 
 
     # Get arguments from command
     aaa = parser.parse_args()
@@ -106,6 +118,7 @@ if __name__=="__main__":
     skip_plots = aaa.skip_plots
     skip_raw_plots = aaa.skip_raw_plots
     skip_basic_plots = aaa.skip_basic_plots
+    skip_visualizations = aaa.skip_visualizations
 
     # Initialize the pipeline
     # TODO - create options to specify path or use default locations specified in config file
@@ -113,13 +126,16 @@ if __name__=="__main__":
         raw_data_path="bin/data/DATA.2023.06.26/",
         raw_database_output_path="data/movement_database/",
         statistics_database_output_path="data/movement_database/",
-        plot_output_directory="data/analysis/"
+        plot_output_directory="data/analysis/",
+        visualization_output_directory="data/analysis/visualizations/",
     )
 
     # Run the pipeline with provided arguments
-    print(f"Running pipline with skip_ingest={skip_ingest_arg}, quick_run={quick_run}, skip_plots={skip_plots}, skip_raw_plots={skip_raw_plots}, and skip_basic_plots={skip_basic_plots}")
+    # TODO - easier print function for arguments
+    cbdp._log_output(f"Running pipline with skip_ingest={skip_ingest_arg}, quick_run={quick_run}, skip_plots={skip_plots}, skip_raw_plots={skip_raw_plots}, and skip_basic_plots={skip_basic_plots}")
     cbdp.run_pipeline(skip_ingest=skip_ingest_arg, 
                       quick_run=quick_run, 
                       skip_plots=skip_plots, 
                       skip_raw_plots=skip_raw_plots, 
-                      skip_basic_plots=skip_basic_plots)
+                      skip_basic_plots=skip_basic_plots,
+                      skip_visualizations=skip_visualizations)
