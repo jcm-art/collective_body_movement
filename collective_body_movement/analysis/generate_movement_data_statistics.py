@@ -11,7 +11,7 @@ class CollectiveBodyMovementDataStatistics:
         self.movement_database_path = self.movement_database_path/"raw_movement_database.csv"
         self.statistics_output_dir_path = pathlib.Path(statistics_output_path)
         self.basic_metrics_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_movement_metrics.csv")
-        self.algorithm_metrics_output_path = pathlib.Path(self.statistics_output_dir_path/"movement_algorithm_metrics.csv")
+        self.algorithm_metrics_output_path = pathlib.Path(self.statistics_output_dir_path/"algorithm_movement_metrics.csv")
         self.basic_metric_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_metric_summary_statistics.json")
         self.algorithm_metric_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"algorithm_metric_summary_statistics.json")
         self.metric_stats_df_output_path = pathlib.Path(self.statistics_output_dir_path/"all_metric_summary_statistics.csv")
@@ -37,8 +37,8 @@ class CollectiveBodyMovementDataStatistics:
         # Get all unique data collections in the database
         self._set_datacollect_list()
 
-        basic_statistics_dicts = {}
-        algoritm_statistics_dicts = {}
+        basic_metrics_dicts = {}
+        algoritm_metrics_dicts = {}
 
         # Iterate through each data collection
         for data_collect_id in self.data_collect_list:
@@ -46,16 +46,16 @@ class CollectiveBodyMovementDataStatistics:
             single_df = self._get_single_dataframe(data_collect_id)
 
             # Generate statistics for each data collection
-            basic_dict = self._generate_basic_statistics(single_df, data_collect_id)
-            algorithm_dict = self._add_advanced_statistics(single_df, data_collect_id)
+            basic_dict = self._generate_basic_metrics(single_df, data_collect_id)
+            algorithm_dict = self._generate_algorithm_metrics(single_df, data_collect_id)
 
             # Append statistics to overall statistics dictionary
-            basic_statistics_dicts[data_collect_id] = basic_dict
-            algoritm_statistics_dicts[data_collect_id] = algorithm_dict
+            basic_metrics_dicts[data_collect_id] = basic_dict
+            algoritm_metrics_dicts[data_collect_id] = algorithm_dict
 
         # Convert dictionaries to dataframes
-        basic_df = self._convert_metrics_dict_to_dataframe(basic_statistics_dicts)
-        algorithm_df = self._convert_metrics_dict_to_dataframe(algoritm_statistics_dicts)
+        basic_df = self._convert_metrics_dict_to_dataframe(basic_metrics_dicts)
+        algorithm_df = self._convert_metrics_dict_to_dataframe(algoritm_metrics_dicts)
 
         # Update stored dataframes with results of statistics calculations
         self.basic_movement_metrics_df = basic_df
@@ -131,18 +131,8 @@ class CollectiveBodyMovementDataStatistics:
 
         return statistics_df
 
-    def _generate_basic_statistics(self, single_df, data_collect_name):
-        # Available fields in raw movement database:
-        # ,time,chapitre,leftballscount,rightballscount,
-        # headpos_x,headpos_y,headpos_z,
-        # leftpos_x,leftpos_y,leftpos_z,rightpos_x,rightpos_y,rightpos_z,
-        # bigballpos_x,bigballpos_y,bigballpos_z,headRot_i,
-        # headRot_j,headRot_k,headRot_l,
-        # leftrot_i,leftrot_j,leftrot_k,leftrot_l,
-        # rightpos1_i,rightpos1_j,rightpos1_k,rightpos1_l,
-        # data_collection_name,subfolder,data_collection_example,client_number,
-        # datafile_year,datafile_day,datafile_month,datafile_seconds,timestamp,timestamp_from_start
-
+    def _generate_basic_metrics(self, single_df, data_collect_name):
+        # Define empty dictionary for statistics
         single_stats_dict = {}
         single_stats_dict['data_collect_name'] = data_collect_name
 
@@ -169,7 +159,7 @@ class CollectiveBodyMovementDataStatistics:
                         data_array = single_df[sensor_location + '_' + motion_type + '_' + axes].to_numpy()
                         normalized_array = data_array - np.mean(data_array)
 
-                        # TODO - replace with dictionary of functions
+                        # TODO - replace with dictionary or list of functions
                         derived_val = 'mean'
                         new_column = sensor_location + '_' + motion_type + '_' + axes + '_' + derived_val
                         statistic = np.mean(data_array)
@@ -227,22 +217,70 @@ class CollectiveBodyMovementDataStatistics:
 
         return single_stats_dict
 
-    def _add_advanced_statistics(self, single_df, data_collect_name):
+    def _generate_algorithm_metrics(self, single_full_df, data_collect_name):
+        # ,time,chapitre,leftballscount,rightballscount,
 
+        # Separate data frame by chapter for analysis and create dataframe list to enable iteration
+        # Hardcode chapter_list: # Dataset variation causes some issues if pulling from movement DF
+        chapter_list = [1.0, 2.0, 3.0, 4.0] 
+        df_dict = {}
+        for chapter in chapter_list:
+            df_dict[chapter]=single_full_df[single_full_df['chapitre']==chapter]
+
+        # Establish dictionary to track metrics
         single_stats_dict = {}
         single_stats_dict['data_collect_name'] = data_collect_name
 
+        # Set base metric names
+        metric_planar_distance_traveled = "planar_distance_traveled_chapter-"
+        metric_cartesian_distance_traveled = "cartesian_distance_traveled_chapter-"
+        planar_distance_traveled_allchapters = 0 # Skips chapter 4, should be end of experience
+        cartesian_distance_traveled_allchapters = 0 # Skips chapter 4, should be end of experience
 
-        x_array = single_df['head_pos_x'].to_numpy()
-        y_array = single_df['head_pos_y'].to_numpy()
-        z_array = single_df['head_pos_z'].to_numpy()
+        for chapter_num, chapter_df in df_dict.items():
 
-        total_distance_traveled = 0
+            total_planar_dist_one_chap = 0
+            total_cartesian_dist_one_chap = 0
 
-        for i in range(len(x_array)-1):
-            total_distance_traveled += np.sqrt((x_array[i+1]-x_array[i])**2 + (y_array[i+1]-y_array[i])**2 + (z_array[i+1]-z_array[i])**2)
+            # Get numpy arrays of data to enable metrics
+            x_array = chapter_df['head_pos_x'].to_numpy()
+            y_array = chapter_df['head_pos_y'].to_numpy()
+            z_array = chapter_df['head_pos_z'].to_numpy()
 
-        single_stats_dict["total_distance_traveled"] = total_distance_traveled
+            # TODO - speed up by eliminating for loop
+            for i in range(len(x_array)-1):
+                total_planar_dist_one_chap += np.sqrt((x_array[i+1]-x_array[i])**2 + (z_array[i+1]-z_array[i])**2)
+                total_cartesian_dist_one_chap += np.sqrt((x_array[i+1]-x_array[i])**2 + (y_array[i+1]-y_array[i])**2 + (z_array[i+1]-z_array[i])**2)
+
+            single_stats_dict[f"{metric_planar_distance_traveled}{chapter_num}"] = total_planar_dist_one_chap
+
+            if chapter_num<=3:
+                planar_distance_traveled_allchapters+=total_planar_dist_one_chap
+                cartesian_distance_traveled_allchapters+=total_cartesian_dist_one_chap
+
+        single_stats_dict[f"{metric_planar_distance_traveled}all"] = planar_distance_traveled_allchapters
+        single_stats_dict[f"{metric_cartesian_distance_traveled}all"] = cartesian_distance_traveled_allchapters
+
+        # Balls collected metrics
+        chapter = 1
+        left_balls_collected = df_dict[chapter]["leftballscount"].to_numpy()
+        right_balls_collected = df_dict[chapter]["rightballscount"].to_numpy()
+
+        left_collect_max = left_balls_collected.max()
+        right_collect_max = right_balls_collected.max()
+        single_stats_dict["left_balls_collected_chapter-1"] = left_collect_max
+        single_stats_dict["right_balls_collected_chapter-1"] = right_collect_max
+        single_stats_dict["total_balls_collected_chapter-1"] = left_collect_max+right_collect_max
+
+        # TODO - implement inertia measurement
+        # Inertia - assumed fixed inertias of hands and head
+
+        # TODO - implement angular momentum measurement
+        # Angular Momentum - assumed fixed weights and intertias
+
+        # TODO - implement clustering measurement for maze to assess stationary vs. exploration
+
+        print(single_stats_dict.__len__())
 
         return single_stats_dict
     
