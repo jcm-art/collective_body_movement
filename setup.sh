@@ -7,7 +7,7 @@ if [[ "$(python3 -V)" =~ "Python 3" ]]
 then
     echo "Verified Python 3 tk is already installed as default version"
 else
-    brew install python-tk@3.10
+    brew install python-tk@3.11
 fi
 
 if [[ "$(virtualenv --version)" =~ "virtualenv" ]]
@@ -23,8 +23,8 @@ then
     echo "Virtualenv already exists"
 else
     echo "Creating virtualenv"
-    # TODO - verify works
-    virtualenv -p --system-site-packages python-tk@3.10 cbenv
+    # TODO - verify works / tk call out is necessary
+    virtualenv -p --system-site-packages python-tk@3.11 cbenv
 fi
 
 source cbenv/bin/activate

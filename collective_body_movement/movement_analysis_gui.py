@@ -1,11 +1,17 @@
-import tk
+import tkinter as tk
 
 
-class ColletiveBodyMovementAnalysisGUI:
+class ColletiveBodyMovementAnalysisGUI(tk.Frame):
 
-    def __init__(self) -> None:
-        # Create the root (base) window where all widgets go
+    def __init__(self,master=None) -> None:
+        # Initiate the base frame
         tk.Frame.__init__(self, master)
+
+        # Configure the window grid inherited from tk.Frame
+        self.grid()
+
+        # Set application title 
+        self.master.title('Sample application')
 
         # Initialize empty widget list
         self.widget_list = []
@@ -20,7 +26,7 @@ class ColletiveBodyMovementAnalysisGUI:
 
         # Create first widget - a label with words
         widget_item = {}
-        w = Label(self.root, text="Hello, world!")  
+        w = tk.Label(self.root, text="Hello, world!")  
 
         widget_item["widget"] = w
         widget_item["metadata"] = "TBD"
@@ -29,7 +35,7 @@ class ColletiveBodyMovementAnalysisGUI:
 
         # Create second widget
         widget_item = {}
-        myButton = Button(self.root, text="Exit", command=self._buttonPushed)
+        myButton = tk.Button(self.root, text="Exit", command=self._buttonPushed)
         widget_item["widget"] = myButton
         widget_item["metadata"] = "TBD"
 
@@ -41,12 +47,12 @@ class ColletiveBodyMovementAnalysisGUI:
 
         for item in self.widget_list:
             widget = item["widget"]
-            widget.pack()
+            widget.grid()
 
     def start_gui(self):
         self._log_output("Starting GUI")
         # Start the event loop to wait for user input, clicks, redraw, etc
-        self.root.mainloop() 
+        self.mainloop() 
 
     def _buttonPushed(self): 
         self._log_output("Exiting the application")
