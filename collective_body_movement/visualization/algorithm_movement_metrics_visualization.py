@@ -1,6 +1,12 @@
 
+import os
+import sys
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.animation import FuncAnimation
+from matplotlib.patches import Rectangle
 import pathlib
-
 
 
 class CollectiveBodyAlgorithmVisualizer:
