@@ -1,6 +1,7 @@
 import pandas as pd
 import pathlib
 import numpy as np
+import json
 
 class CollectiveBodyMovementDataStatistics:
 
@@ -9,8 +10,11 @@ class CollectiveBodyMovementDataStatistics:
         self.movement_database_path = pathlib.Path(movement_database_path)
         self.movement_database_path = self.movement_database_path/"raw_movement_database.csv"
         self.statistics_output_dir_path = pathlib.Path(statistics_output_path)
-        self.basic_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_movement_metrics.csv")
-        self.algorithm_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"movement_algorithm_metrics.csv")
+        self.basic_metrics_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_movement_metrics.csv")
+        self.algorithm_metrics_output_path = pathlib.Path(self.statistics_output_dir_path/"movement_algorithm_metrics.csv")
+        self.basic_metric_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_metric_summary_statistics.json")
+        self.algorithm_metric_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"algorithm_metric_summary_statistics.json")
+        self.metric_stats_df_output_path = pathlib.Path(self.statistics_output_dir_path/"all_metric_summary_statistics.csv")
         
         # Make directory if not available
         self.statistics_output_dir_path.mkdir(parents=True, exist_ok=True)
@@ -19,8 +23,14 @@ class CollectiveBodyMovementDataStatistics:
         self.raw_movement_df = pd.read_csv(self.movement_database_path, index_col=0)
 
         # Create output database
-        self.basic_movement_statistics_df = pd.DataFrame()
-        self.algorithm_movement_statistics_df = pd.DataFrame()
+        self.basic_movement_metrics_df = pd.DataFrame()
+        self.algorithm_movement_metrics_df = pd.DataFrame()
+
+        # Create output summary dictionary for json file and metrics dataframe
+        self.basic_metric_statistics = {}
+        self.algorithm_metric_statistics = {}
+        self.metrics_statistics_df = pd.DataFrame()
+
 
     def generate_statistics_databases(self):
         
@@ -44,20 +54,38 @@ class CollectiveBodyMovementDataStatistics:
             algoritm_statistics_dicts[data_collect_id] = algorithm_dict
 
         # Convert dictionaries to dataframes
-        basic_df = self._convert_dict_to_dataframe(basic_statistics_dicts)
-        algorithm_df = self._convert_dict_to_dataframe(algoritm_statistics_dicts)
+        basic_df = self._convert_metrics_dict_to_dataframe(basic_statistics_dicts)
+        algorithm_df = self._convert_metrics_dict_to_dataframe(algoritm_statistics_dicts)
 
         # Update stored dataframes with results of statistics calculations
-        self.basic_movement_statistics_df = basic_df
-        self.algorithm_movement_statistics_df = algorithm_df
+        self.basic_movement_metrics_df = basic_df
+        self.algorithm_movement_metrics_df = algorithm_df
+
+        # Generate dataset summary statistics
+        self.algorithm_metric_statistics = self._generate_metrics_statistics(algorithm_df)
+        self.basic_metric_statistics = self._generate_metrics_statistics(basic_df)
+
+        # Generate data frame of metric statistics
+        self.metrics_statistics_df = self._convert_statistics_dicts_to_dataframe(
+            [self.algorithm_metric_statistics, self.basic_metric_statistics], ["algorithm","basic"])
 
     def save_statistics_dfs(self):
-        self._log_output("Saving raw database and skipped file information")
-        self.basic_movement_statistics_df.to_csv(self.basic_stats_output_path)  
-        self.algorithm_movement_statistics_df.to_csv(self.algorithm_stats_output_path)  
+        self._log_output("Saving basic metrics, algorithm metrics, and summary json")
+        self.basic_movement_metrics_df.to_csv(self.basic_metrics_output_path)  
+        self.algorithm_movement_metrics_df.to_csv(self.algorithm_metrics_output_path)  
 
-    def _convert_dict_to_dataframe(self, statistics_dict):
-        # Method to convert statistics dictionaries to dataframes
+        # Save metric statistics as JSON files to avoid recomputing for other applications
+        with open(self.basic_metric_stats_output_path, "w") as outfile:
+            json.dump(self.basic_metric_statistics, outfile, indent=4)
+        
+        with open(self.algorithm_metric_stats_output_path, "w") as outfile:
+            json.dump(self.algorithm_metric_statistics, outfile, indent=4)
+
+        # Save statistics as CSV for easier filtering
+        self.metrics_statistics_df.to_csv(self.metric_stats_df_output_path)  
+
+    def _convert_metrics_dict_to_dataframe(self, statistics_dict):
+        # Method to convert metrics dictionaries to dataframes
         
         # Reformat dictionary into format ingestible by Pandas
         formatted_dict = {}
@@ -67,6 +95,36 @@ class CollectiveBodyMovementDataStatistics:
                     formatted_dict[k2].append(v2)
                 else:
                     formatted_dict[k2] = [v2]
+
+        # Convert dict to dataframe
+        statistics_df = pd.DataFrame.from_dict(formatted_dict)
+
+        return statistics_df
+    
+    def _convert_statistics_dicts_to_dataframe(self, statistics_dicts, metric_classes):
+        # Method to convert statistics dictionaries to dataframes
+        formatted_dict={}
+
+        for i in range(len(statistics_dicts)):
+
+            for k, v in statistics_dicts[i].items():
+                # Initialize if no starting dictionary passed
+                if "metric_name" in formatted_dict:
+                    formatted_dict["metric_name"].append(k)
+                else:
+                    formatted_dict["metric_name"]=[k]
+
+                if "metric_class" in formatted_dict:
+                    formatted_dict["metric_class"].append(metric_classes[i])
+                else:
+                    formatted_dict["metric_class"]=[metric_classes[i]]
+
+                # Port dictionary items to correct format
+                for k2, v2 in v.items():
+                    if k2 in formatted_dict:
+                        formatted_dict[k2].append(v2)
+                    else:
+                        formatted_dict[k2] = [v2]
 
         # Convert dict to dataframe
         statistics_df = pd.DataFrame.from_dict(formatted_dict)
@@ -187,6 +245,35 @@ class CollectiveBodyMovementDataStatistics:
         single_stats_dict["total_distance_traveled"] = total_distance_traveled
 
         return single_stats_dict
+    
+    def _generate_metrics_statistics(self, dataset_metrics_df):
+        self._log_output("Generating metrics statistics summaries")
+
+        metrics_statistics_dict = {}
+
+        for column in dataset_metrics_df.columns:
+            if column == "data_collect_name":
+                continue
+
+            # Establish nested dictionary for each column
+            column_dict = {}
+
+            # Add metrics to column dict
+            column_dict["mean"] = float(dataset_metrics_df[column].mean())
+            column_dict["median"] = float(dataset_metrics_df[column].median())
+            column_dict["skew"] = float(dataset_metrics_df[column].skew())
+            column_dict["min"] = float(dataset_metrics_df[column].min())
+            column_dict["max"] = float(dataset_metrics_df[column].max())
+            column_dict["std_dev"] = float(dataset_metrics_df[column].std())
+            column_dict["range"] = float(column_dict["max"]-column_dict["min"])
+
+            # Assign column dict to metrics_statistics_dict
+            metrics_statistics_dict[column]=column_dict
+
+        return metrics_statistics_dict
+
+
+
 
     def _set_datacollect_list(self):
         self.data_collect_list = self.raw_movement_df['dataset_id'].unique()
