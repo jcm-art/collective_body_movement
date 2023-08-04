@@ -5,51 +5,73 @@ import numpy as np
 class CollectiveBodyMovementDataStatistics:
 
     def __init__(self, movement_database_path, statistics_output_path) -> None:
+        # Initailzie paths
         self.movement_database_path = pathlib.Path(movement_database_path)
-        self.statistics_output_path = pathlib.Path(statistics_output_path)
+        self.movement_database_path = self.movement_database_path/"raw_movement_database.csv"
+        self.statistics_output_dir_path = pathlib.Path(statistics_output_path)
+        self.basic_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"basic_movement_metrics.csv")
+        self.algorithm_stats_output_path = pathlib.Path(self.statistics_output_dir_path/"movement_algorithm_metrics.csv")
+        
+        # Make directory if not available
+        self.statistics_output_dir_path.mkdir(parents=True, exist_ok=True)
 
         # Read database
         self.raw_movement_df = pd.read_csv(self.movement_database_path, index_col=0)
 
         # Create output database
-        self.movement_statistics_df = pd.DataFrame()
+        self.basic_movement_statistics_df = pd.DataFrame()
+        self.algorithm_movement_statistics_df = pd.DataFrame()
 
-    def generate_statistics_database(self):
+    def generate_statistics_databases(self):
         
         # Get all unique data collections in the database
-        self._get_datacollect_list()
+        self._set_datacollect_list()
 
-        all_statistics_dict = {}
+        basic_statistics_dicts = {}
+        algoritm_statistics_dicts = {}
 
         # Iterate through each data collection
-        for data_collect_name in self.data_collect_list:
+        for data_collect_id in self.data_collect_list:
             # Get a dataframe for each data collection
-            single_df = self._get_single_dataframe(data_collect_name)
+            single_df = self._get_single_dataframe(data_collect_id)
 
             # Generate statistics for each data collection
-            statistics_dict = self._generate_basic_statistics(single_df,data_collect_name)
-            statistics_dict = self._add_advanced_statistics(single_df, statistics_dict)
+            basic_dict = self._generate_basic_statistics(single_df, data_collect_id)
+            algorithm_dict = self._add_advanced_statistics(single_df, data_collect_id)
 
             # Append statistics to overall statistics dictionary
-            all_statistics_dict[data_collect_name] = statistics_dict
+            basic_statistics_dicts[data_collect_id] = basic_dict
+            algoritm_statistics_dicts[data_collect_id] = algorithm_dict
 
-        # Convert dictionary to dataframe
+        # Convert dictionaries to dataframes
+        basic_df = self._convert_dict_to_dataframe(basic_statistics_dicts)
+        algorithm_df = self._convert_dict_to_dataframe(algoritm_statistics_dicts)
+
+        # Update stored dataframes with results of statistics calculations
+        self.basic_movement_statistics_df = basic_df
+        self.algorithm_movement_statistics_df = algorithm_df
+
+    def save_statistics_dfs(self):
+        self._log_output("Saving raw database and skipped file information")
+        self.basic_movement_statistics_df.to_csv(self.basic_stats_output_path)  
+        self.algorithm_movement_statistics_df.to_csv(self.algorithm_stats_output_path)  
+
+    def _convert_dict_to_dataframe(self, statistics_dict):
+        # Method to convert statistics dictionaries to dataframes
+        
+        # Reformat dictionary into format ingestible by Pandas
         formatted_dict = {}
-        for k, v in all_statistics_dict.items():
-
+        for k, v in statistics_dict.items():
             for k2, v2 in v.items():
                 if k2 in formatted_dict:
                     formatted_dict[k2].append(v2)
                 else:
                     formatted_dict[k2] = [v2]
 
-        self.movement_statistics_df = pd.DataFrame.from_dict(formatted_dict)
+        # Convert dict to dataframe
+        statistics_df = pd.DataFrame.from_dict(formatted_dict)
 
-    def save_statistics_df(self):
-        self._log_output("Saving raw database and skipped file information")
-        self.statistics_output_path.parent.mkdir(parents=True, exist_ok=True)  
-        self.movement_statistics_df.to_csv(self.statistics_output_path)  
-
+        return statistics_df
 
     def _generate_basic_statistics(self, single_df, data_collect_name):
         # Available fields in raw movement database:
@@ -63,9 +85,7 @@ class CollectiveBodyMovementDataStatistics:
         # data_collection_name,subfolder,data_collection_example,client_number,
         # datafile_year,datafile_day,datafile_month,datafile_seconds,timestamp,timestamp_from_start
 
-        # TODO - replace dataframe with dictionary to improve speed
         single_stats_dict = {}
-        # single_stats_df = pd.DataFrame([data_collect_name], columns=['data_collect_name'])
         single_stats_dict['data_collect_name'] = data_collect_name
 
         sensor_locations = ['head','left','right','bigball']
@@ -149,7 +169,12 @@ class CollectiveBodyMovementDataStatistics:
 
         return single_stats_dict
 
-    def _add_advanced_statistics(self, single_df, statistics_dict):
+    def _add_advanced_statistics(self, single_df, data_collect_name):
+
+        single_stats_dict = {}
+        single_stats_dict['data_collect_name'] = data_collect_name
+
+
         x_array = single_df['head_pos_x'].to_numpy()
         y_array = single_df['head_pos_y'].to_numpy()
         z_array = single_df['head_pos_z'].to_numpy()
@@ -159,11 +184,11 @@ class CollectiveBodyMovementDataStatistics:
         for i in range(len(x_array)-1):
             total_distance_traveled += np.sqrt((x_array[i+1]-x_array[i])**2 + (y_array[i+1]-y_array[i])**2 + (z_array[i+1]-z_array[i])**2)
 
-        statistics_dict["total_distance_traveled"] = total_distance_traveled
+        single_stats_dict["total_distance_traveled"] = total_distance_traveled
 
-        return statistics_dict
+        return single_stats_dict
 
-    def _get_datacollect_list(self):
+    def _set_datacollect_list(self):
         self.data_collect_list = self.raw_movement_df['dataset_id'].unique()
 
     def _get_single_dataframe(self,data_collect_name):
@@ -176,6 +201,6 @@ class CollectiveBodyMovementDataStatistics:
 if __name__ == "__main__":
     cbmds = CollectiveBodyMovementDataStatistics(
         movement_database_path="data/movement_database/raw_movement_database.csv",
-        statistics_output_path="data/movement_database/movement_statistics_database.csv")
-    cbmds.generate_statistics_database()
-    cbmds.save_statistics_df()
+        statistics_output_path="data/movement_database/")
+    cbmds.generate_statistics_databases()
+    cbmds.save_statistics_dfs()

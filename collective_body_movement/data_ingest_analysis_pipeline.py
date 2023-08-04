@@ -3,7 +3,7 @@ import sys
 import argparse
 
 from preprocessing.raw_movement_data_cleaning import CollectiveBodyDataCleaner
-from analysis.raw_movement_data_plotting import CollectiveBodyRawMovementAnalysis
+from visualization.raw_movement_data_plotting import CollectiveBodyRawMovementAnalysis
 from analysis.movement_statistics_data_plotting import CollectiveBodyMovementStatisticsAnalysis
 from analysis.generate_movement_data_statistics import CollectiveBodyMovementDataStatistics
 
@@ -52,14 +52,14 @@ class CollectiveBodyDataPipeline:
         self._log_output("Generating statistics")
         # TODO make names static constants
         cbmds = CollectiveBodyMovementDataStatistics(
-            movement_database_path=self.raw_database_output_path/"raw_movement_database.csv",
-            statistics_output_path= self.statistics_database_outputh_path/"movement_statistics_database.csv"
+            movement_database_path=self.raw_database_output_path,
+            statistics_output_path= self.statistics_database_outputh_path
         )
-        cbmds.generate_statistics_database()
-        cbmds.save_statistics_df()
+        cbmds.generate_statistics_databases()
+        cbmds.save_statistics_dfs()
 
     def generate_plots(self):
-        self._log_output("Generating plots")
+        self._log_output("Generating visualizations")
         cbma = CollectiveBodyRawMovementAnalysis(
             movement_database_path=self.raw_database_output_path/"raw_movement_database.csv",
             plot_output_directory=self.plot_output_directory/"raw_movement_plots/",
