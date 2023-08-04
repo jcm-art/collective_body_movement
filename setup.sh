@@ -5,9 +5,9 @@ echo "Running Setup Script for Collective Body."
 # Install Python dependencies
 if [[ "$(python3 -V)" =~ "Python 3" ]]
 then
-    echo "Verified Python 3 is already installed"
+    echo "Verified Python 3 tk is already installed as default version"
 else
-    brew install python3
+    brew install python-tk@3.10
 fi
 
 if [[ "$(virtualenv --version)" =~ "virtualenv" ]]
@@ -23,7 +23,8 @@ then
     echo "Virtualenv already exists"
 else
     echo "Creating virtualenv"
-    virtualenv -p python3 cbenv
+    # TODO - verify works
+    virtualenv -p --system-site-packages python-tk@3.10 cbenv
 fi
 
 source cbenv/bin/activate
