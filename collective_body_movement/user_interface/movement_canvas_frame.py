@@ -5,13 +5,10 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
 
     def __init__(self,master, height, width) -> None:
         # Initiate the base frame
-        tk.Frame.__init__(self, master, background="green", height=height, width=width)
+        tk.Frame.__init__(self, master, background="green")
 
         # Configure the window grid inherited from tk.Frame
         self._configure_grid()
-
-            # Initialize empty widget list
-        self.widget_list = []
 
         # Create and pack widgets
         self.create_wigets()
@@ -20,28 +17,33 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
     def create_wigets(self):
         self._log_output("Creating widgets for GUI")
 
-        # TODO - implement packing and unpacking arguments with **kwargs https://www.shecancode.io/blog/unpacking-function-arguments-in-python
-        # Create first widget - a label with words
-        widget_item = {}
-        w = tk.Label(self, text="Hello, world!")  
+        # Create title
+        self.canvas_title = tk.Label(self, text="Movement Visualization", justify=tk.CENTER)
 
-        widget_item["widget"] = w
-        widget_item["metadata"] = {
-            "sticky": tk.N+tk.S+tk.E+tk.W,
-        }
-
-        self.widget_list.append(widget_item)
+        # Create canvas
+        self.vis_canvas = tk.Canvas(self, height=500, width=500, background="white")
 
     def pack_widgets(self):
         self._log_output("Packing widgets")
+        
+        # Add title to grid
+        self.canvas_title.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
 
-        for item in self.widget_list:
-            widget = item["widget"]
-            if type(item["metadata"]) is dict:
-                widget.grid(item["metadata"])
-            else:
-                # TODO - define default args for grid
-                widget.grid()
+        # Add canvas to grid
+        self.vis_canvas.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+
+    def start(self, selected_dataset, selected_metric):
+        self._log_output("Starting canvas - not yet implemented")
+
+        # TODO - update loop after start
+        #      root.after(1000, mainLoop) #Calls mainLoop every 1 second.
+        # https://stackoverflow.com/questions/12892180/how-to-get-the-name-of-the-master-frame-in-tkinter
+        # https://stackoverflow.com/questions/62543178/in-python-is-there-a-way-to-set-a-tkinter-update-timer-that-is-non-blocking-wh
+
+
+    def stop(self):
+        self._log_output("Stopping canvas - not yet implemented")
 
     def _configure_grid(self):
         self.grid(sticky=tk.N+tk.S+tk.E+tk.W)

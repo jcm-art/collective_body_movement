@@ -7,6 +7,29 @@ from collective_body_movement.user_interface.movement_control_frame import Colle
 from collective_body_movement.user_interface.movement_metric_frame import ColletiveBodyMovementMetricFrame
 from collective_body_movement.user_interface.movement_console_frame import ColletiveBodyMovementConsoleFrame
 
+
+class CollectiveBodyGuiPlaybackManager:
+    def __init__(self, gui):
+        self.gui = gui
+
+        # TODO - remove list and eliminate hard coding
+        self.gui.control_frame.start_canvas_button.configure(command=self.start_button_callback)
+        self.gui.control_frame.stop_canvas_button.configure(command=self.stop_button_callback)
+
+    def start_button_callback(self):
+        print("Play button pressed")
+        # TODO - do not restart if already in progress
+        loaded_dataset = self.gui.control_frame.get_loaded_dataset()
+        metric_summary_statistics = self.gui.control_frame.get_metric_summary_statistics()
+        selected_metric = self.gui.control_frame.get_chosen_metric()
+        self.gui.canvas_frame.start(loaded_dataset, selected_metric)
+        self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric)
+    
+    def stop_button_callback(self):
+        print("Stop button pressed")
+        self.gui.canvas_frame.stop()
+
+
 class ColletiveBodyMovementAnalysisGUI(tk.Frame):
 
     def __init__(self,master=None) -> None:
@@ -22,77 +45,30 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         # Set application title 
         self.master.title('Collective Body Movement')
 
-        # Initialize empty widget list
-        self.widget_list = []
-
         # Create and pack widgets
         self.create_subframes()
-        #self.create_wigets()
         self.pack_widgets()
 
     def create_subframes(self):
         # Establish common parameters for all subframes
         frame_padding = 2
 
-        # TODO - convert to a helper function
         # Create canvas frame
-        self.widget_list.append({
-            "widget": ColletiveBodyMovementCanvasFrame(self, height=self.window_height*4/5, width=self.window_width/2),
-            "metadata": {
-                "sticky": tk.N+tk.S+tk.E+tk.W,
-                "padx": frame_padding,
-                "pady": frame_padding,
-                "column": 0,
-                "row": 0,
-                "rowspan": 2,
-            }
-        })
-
+        self.canvas_frame = ColletiveBodyMovementCanvasFrame(self, height=self.window_height*4/5, width=self.window_width/2)
 
         # Create control frame
-        self.widget_list.append({
-            "widget": ColletiveBodyMovementControlFrame(self, height=self.window_height*2/5, width=self.window_width/2),
-            "metadata": {
-                "sticky": tk.N+tk.S+tk.E+tk.W,
-                "padx": frame_padding,
-                "pady": frame_padding,
-                "column": 1,
-                "row": 0,
-            }
-        })
+        self.control_frame = ColletiveBodyMovementControlFrame(self, height=self.window_height*2/5, width=self.window_width/2)
 
         # Create metric frame
-        self.widget_list.append({
-            "widget": ColletiveBodyMovementMetricFrame(self, height=self.window_height*2/5, width=self.window_width/2),
-            "metadata": {
-                "sticky": tk.N+tk.S+tk.E+tk.W,
-                "padx": frame_padding,
-                "pady": frame_padding,
-                "column": 1,
-                "row": 1,
-            }
-        })
+        self.metric_frame = ColletiveBodyMovementMetricFrame(self, height=self.window_height*2/5, width=self.window_width/2)
 
         # Create console frame
-        self.widget_list.append({
-            "widget": ColletiveBodyMovementConsoleFrame(self, height=self.window_height*1/5, width=self.window_width),
-            "metadata": {
-                "sticky": tk.N+tk.S+tk.E+tk.W,
-                "padx": frame_padding,
-                "pady": frame_padding,
-                "column": 0,
-                "row": 2,
-                "columnspan": 2,
-
-            }
-        })
+        self.console_frame = ColletiveBodyMovementConsoleFrame(self, height=self.window_height*1/5, width=self.window_width)
         
     def create_wigets(self):
         self._log_output("Creating widgets for GUI")
 
         # TODO - implement packing and unpacking arguments with **kwargs https://www.shecancode.io/blog/unpacking-function-arguments-in-python
-
-
 
         # Create first widget - a label with words
         widget_item = {}
@@ -122,17 +98,12 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
 
     def pack_widgets(self):
         self._log_output("Packing widgets")
+        frame_padding = 2
 
-        for item in self.widget_list:
-            widget = item["widget"]
-            print(item["metadata"])
-            if type(item["metadata"]) is dict:
-                print(item["metadata"])
-                widget.grid(item["metadata"])
-                widget.grid_propagate(0)
-            else:
-                # TODO - define default args for grid
-                widget.grid()
+        self.canvas_frame.grid(row=0, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.control_frame.grid(row=0, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.metric_frame.grid(row=1, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.console_frame.grid(row=2, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
         
     def start_gui(self):
         self._log_output("Starting GUI")
@@ -145,10 +116,10 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
 
         # Make the top level window expandable
         # TODO - look at expanding
-        top=self.winfo_toplevel()
-        top.geometry(f"{self.window_width}x{self.window_height}")
-        top.minsize(self.window_width, self.window_height)
-        top.maxsize(self.window_width, self.window_height)
+        #top=self.winfo_toplevel()
+        #top.geometry(f"{self.window_width}x{self.window_height}")
+        #top.minsize(self.window_width, self.window_height)
+        #top.maxsize(self.window_width, self.window_height)
         '''top.rowconfigure(0, weight=1)
         top.columnconfigure(0, weight=1)
 
@@ -169,4 +140,5 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
 
 if __name__ == "__main__":
     cbmag = ColletiveBodyMovementAnalysisGUI()
+    guimanager = CollectiveBodyGuiPlaybackManager(cbmag)
     cbmag.start_gui()

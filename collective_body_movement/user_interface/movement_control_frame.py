@@ -1,12 +1,14 @@
 
 import tkinter as tk
 import pandas as pd
+import json
+import pathlib
 
 class ColletiveBodyMovementControlFrame(tk.Frame):
 
     def __init__(self, master, height, width) -> None:
         # Initiate the base frame
-        tk.Frame.__init__(self, master, background="blue", height=height, width=width)
+        tk.Frame.__init__(self, master, background="blue")
 
         self.frame_width = width
         self.frame_height = height
@@ -23,6 +25,15 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self._set_default_text()
 
         self._add_widgets_to_grid()
+
+    def get_loaded_dataset(self):
+        return self.loaded_dataset
+    
+    def get_metric_summary_statistics(self):
+        return self.algorithm_metric_statistics
+    
+    def get_chosen_metric(self):
+        return self.selected_metric
 
     def _create_control_inputs(self):
         self.database_location=tk.StringVar()
@@ -51,12 +62,12 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         # Metrics
         self.load_metric_button = tk.Button(self, text="Select Metric", command=self._select_metric)
         # TODO - replace with option menu https://stackoverflow.com/questions/15884075/tkinter-in-a-virtualenv
-        self.select_metric_entry = tk.Entry(self, textvariable=self.metric_var)
+        #self.select_metric_entry = tk.Entry(self, textvariable=self.metric_var)
 
         # Start / Stop / Play
-        self.start_canvas_button = tk.Button(self, text="Start", command=self._start_canvas)
-        self.stop_canvas_button = tk.Button(self, text="Stop", command=self._stop_canvas)
-        self.export_canvas_button = tk.Button(self, text="Export Vis", command=self._export_canvas)
+        self.start_canvas_button = tk.Button(self, text="Start")
+        self.stop_canvas_button = tk.Button(self, text="Stop")
+        self.export_canvas_button = tk.Button(self, text="Export Vis", command=self._export_visualization)
 
 
 
@@ -86,7 +97,6 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
 
         # Add metrics selection to frame
         self.load_metric_button.grid(row=4, column=0, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
-        self.select_metric_entry.grid(row=4, column=1, columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
 
         # Add canvas controls to frame
         self.start_canvas_button.grid(row=5, column=0, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -98,12 +108,34 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
 
     def _load_database(self):
-        database_path=self.database_location.get()
-        self._log_output(f"Loading database at path {database_path}")
+        self.database_path=pathlib.Path(self.database_location.get())
+        self._log_output(f"Loading database at path {self.database_path}")
         
         # TODO - offload functionality to another class
-        self.raw_movement_df = pd.read_csv(database_path + "raw_movement_database.csv")
+        self.raw_movement_df = pd.read_csv(self.database_path/"raw_movement_database.csv")
         self._log_output(f"Database load completed with {len(self.raw_movement_df)} entries")
+
+        self._add_metrics_options()
+
+    def _add_metrics_options(self):
+        self._log_output("Loading metric options")
+        alogirthm_metric_stats_path = self.database_path / "algorithm_metric_summary_statistics.json"
+        
+        # Load metrics options
+        with open(alogirthm_metric_stats_path) as json_file:
+            self.algorithm_metric_statistics = json.load(json_file)
+
+        options_list = self.algorithm_metric_statistics.keys()
+
+        # Create string var to store option results
+        self.metric_option_var = tk.StringVar(self)
+        self.metric_option_var.set("Select an Option")
+
+        # Populate options menu
+        self.metrics_menu = tk.OptionMenu(self, self.metric_option_var, *options_list)
+        self.metrics_menu.grid(row=4, column=1, columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
+
+
 
 
     def _load_dataset(self):
@@ -116,15 +148,11 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self._log_output(f"Single dataset loaded with {len(self.loaded_dataset)} entries")
 
     def _select_metric(self):
-        pass
+        self.selected_metric = self.metric_option_var.get()
+        self._log_output(f"Selected metric {self.selected_metric}")
 
-    def _start_canvas(self):
-        pass
-
-    def _stop_canvas(self):
-        pass
-
-    def _export_canvas(self):
+    def _export_visualization(self):
+        # TODO - option to implement here directly, not with canvas
         pass
 
     def _log_output(self, to_output):

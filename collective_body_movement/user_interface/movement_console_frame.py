@@ -5,7 +5,7 @@ class ColletiveBodyMovementConsoleFrame(tk.Frame):
 
     def __init__(self,master, height, width) -> None:
         # Initiate the base frame
-        tk.Frame.__init__(self, master, background="gray", height=height, width=width)
+        tk.Frame.__init__(self, master, background="gray")
 
         # Configure the window grid inherited from tk.Frame
         self._configure_grid()
