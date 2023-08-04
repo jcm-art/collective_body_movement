@@ -4,8 +4,8 @@ import argparse
 
 from preprocessing.raw_movement_data_cleaning import CollectiveBodyDataCleaner
 from analysis.generate_movement_data_statistics import CollectiveBodyMovementDataStatistics
-from visualization.raw_movement_data_plotting import CollectiveBodyRawMovementAnalysis
-from visualization.movement_statistics_data_plotting import CollectiveBodyMovementBasicStatisticsAnalysis
+from visualization.raw_movement_data_plotting import CollectiveBodyRawMovementPlots
+from visualization.basic_movement_metrics_plotting import CollectiveBodyMovementBasicMetricsPlots
 
 class CollectiveBodyDataPipeline:
 
@@ -63,20 +63,22 @@ class CollectiveBodyDataPipeline:
 
         # Skip plots of raw statistics if enabled
         if skip_raw_plots==False:
-            cbma = CollectiveBodyRawMovementAnalysis(
+            cbma = CollectiveBodyRawMovementPlots(
                 movement_database_path=self.raw_database_output_path,
                 plot_output_directory=self.plot_output_directory/"raw_movement_plots/",
             )
 
+            # Generate plots for raw movement data
             cbma.generate_scatter_plots()    
             cbma.generate_box_plots()
             cbma.generate_spot_plots()
 
         if skip_basic_plots==False:
-            cbmsa = CollectiveBodyMovementBasicStatisticsAnalysis(
+            cbmsa = CollectiveBodyMovementBasicMetricsPlots(
                 movement_database_path=self.statistics_database_outputh_path,
                 plot_output_directory=self.plot_output_directory/"movement_statistics_plots/")
 
+            # Generate histogram plots for all basic metrics
             cbmsa.generate_histogram_plots()    
 
     def _log_output(self, output):
@@ -106,6 +108,7 @@ if __name__=="__main__":
     skip_basic_plots = aaa.skip_basic_plots
 
     # Initialize the pipeline
+    # TODO - create options to specify path or use default locations specified in config file
     cbdp = CollectiveBodyDataPipeline(
         raw_data_path="bin/data/DATA.2023.06.26/",
         raw_database_output_path="data/movement_database/",
