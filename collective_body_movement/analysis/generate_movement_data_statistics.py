@@ -280,8 +280,6 @@ class CollectiveBodyMovementDataStatistics:
 
         # TODO - implement clustering measurement for maze to assess stationary vs. exploration
 
-        print(single_stats_dict.__len__())
-
         return single_stats_dict
     
     def _generate_metrics_statistics(self, dataset_metrics_df):
