@@ -34,6 +34,7 @@ pip3 install numpy
 pip3 install pandas
 pip3 install matplotlib
 pip3 install PyInstaller
+pip3 install tk
 
 # TODO - notebook install is broken
 # Install notebook

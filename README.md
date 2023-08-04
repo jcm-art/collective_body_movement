@@ -34,14 +34,19 @@ python3 collective_body_movement/data_ingest_analysis_pipeline.py
 Data import can take a significant amount of time. To run a quick trial run with a reduced input, pass the argument:
 
 ```
---quick_run=True
+--quick_run
 ```
 
-for subsequent runs, the initial data ingest phase can be skipped to increase exeuction speed by passing the argument:
+For subsequent runs, the initial data ingest phase can be skipped to increase exeuction speed by passing the argument:
+```
+--skip_raw_data_ingest
+```
 
-```
---skip_raw_data_ingest=True
-```
+To skip plot generation, the following option can be added:
+'''
+--skip_plots
+'''
+
 
 ### Data Loading
 
