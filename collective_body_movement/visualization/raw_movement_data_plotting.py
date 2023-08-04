@@ -12,6 +12,7 @@ class CollectiveBodyRawMovementAnalysis:
     def __init__(self, movement_database_path, plot_output_directory) -> None:
         # Set Paths
         self.movement_database = pathlib.Path(movement_database_path)
+        self.movement_database = self.movement_database/"raw_movement_database.csv"
         self.plot_output_directory = pathlib.Path(plot_output_directory)
         self.random_output = self.plot_output_directory/"random_plots/"
 
@@ -98,7 +99,7 @@ if __name__=="__main__":
     print("Analyzing data from collective body raw movement data.")
 
     cbma = CollectiveBodyRawMovementAnalysis(
-        movement_database_path="data/movement_database/raw_movement_database.csv",
+        movement_database_path="data/movement_database/",
         plot_output_directory="data/analysis/raw_movement_plots/")
     
     cbma.generate_scatter_plots()    

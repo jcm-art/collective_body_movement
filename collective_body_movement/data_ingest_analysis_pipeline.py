@@ -3,9 +3,9 @@ import sys
 import argparse
 
 from preprocessing.raw_movement_data_cleaning import CollectiveBodyDataCleaner
-from visualization.raw_movement_data_plotting import CollectiveBodyRawMovementAnalysis
-from analysis.movement_statistics_data_plotting import CollectiveBodyMovementStatisticsAnalysis
 from analysis.generate_movement_data_statistics import CollectiveBodyMovementDataStatistics
+from visualization.raw_movement_data_plotting import CollectiveBodyRawMovementAnalysis
+from visualization.movement_statistics_data_plotting import CollectiveBodyMovementStatisticsAnalysis
 
 class CollectiveBodyDataPipeline:
 
@@ -61,7 +61,7 @@ class CollectiveBodyDataPipeline:
     def generate_plots(self):
         self._log_output("Generating visualizations")
         cbma = CollectiveBodyRawMovementAnalysis(
-            movement_database_path=self.raw_database_output_path/"raw_movement_database.csv",
+            movement_database_path=self.raw_database_output_path,
             plot_output_directory=self.plot_output_directory/"raw_movement_plots/",
         )
 
@@ -70,7 +70,7 @@ class CollectiveBodyDataPipeline:
         cbma.generate_spot_plots()
 
         cbmsa = CollectiveBodyMovementStatisticsAnalysis(
-            movement_database_path=self.statistics_database_outputh_path/"movement_statistics_database.csv",
+            movement_database_path=self.statistics_database_outputh_path,
             plot_output_directory=self.plot_output_directory/"movement_statistics_plots/")
 
         cbmsa.generate_histogram_plots()    

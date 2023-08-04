@@ -11,6 +11,7 @@ class CollectiveBodyMovementStatisticsAnalysis:
 
     def __init__(self, movement_database_path, plot_output_directory) -> None:
         self.movement_statistics_database = pathlib.Path(movement_database_path)
+        self.movement_statistics_database = self.movement_statistics_database/"raw_movement_database.csv"
         self.plot_output_directory = pathlib.Path(plot_output_directory)
 
         # Make output directories for plots
