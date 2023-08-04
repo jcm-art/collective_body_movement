@@ -48,3 +48,9 @@ pip3 install tk
 # conda create --name cb_condaenv 
 # conda activate cb_condaenv  
 # conda install -c conda-forge jupyterlab
+
+# Add packages to python path
+current_path=$(pwd)  # for example $PWD or $(pwd)
+package_path='/collective_body_movement/'
+newfilepath="$current_path"/"$( basename "$package_path" )"
+pwd > cbenv/lib/python3.11/site-packages/cb.pth
