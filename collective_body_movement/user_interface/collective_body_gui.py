@@ -72,7 +72,7 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         frame_padding = 2
 
         # Create canvas frame
-        self.canvas_gallery = ColletiveBodyMovementCanvasGallery(self, height=self.window_height*4/5, width=self.window_width/2, num_canvases=2)
+        self.canvas_gallery = ColletiveBodyMovementCanvasGallery(self, height=self.window_height*4/5, width=self.window_width/2, num_canvases=4)
 
         # Create control frame
         self.control_frame = ColletiveBodyMovementControlFrame(self, height=self.window_height*2/5, width=self.window_width/2)

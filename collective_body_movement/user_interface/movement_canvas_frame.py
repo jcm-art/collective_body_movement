@@ -68,13 +68,12 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
         # Allocate dimensions based on number of canvases
         if self.landscape_gallery:
             # Set indices of canvases
-            self.canvas_indices = [(0,0), (0,1), (0,2), (0,1), (1,1), (2,1)]
+            self.canvas_indices = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)]
 
             # TODO - potnetial to split into height and width to account for toolbar space
             match self.num_canvases:
                 case 1:
-                    self.canvas_frame_height = min_dim
-                    self.canvas_frame_width = min_dim
+                    self.canvas_frame_dimension = min_dim
                 case 2:
                     if size_ratio >=2:
                         self.canvas_frame_dimension = min_dim
@@ -85,6 +84,11 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
                         self.canvas_frame_dimension = min_dim
                     else:
                         self.canvas_frame_dimension = int(self.total_canvas_width / 3)
+                case _:
+                    if size_ratio >=3:
+                        self.canvas_frame_dimension = int(min_dim/2)
+                    else:
+                        self.canvas_frame_dimension =int(min(self.total_canvas_width / 3, min_dim/2))
 
 
 
