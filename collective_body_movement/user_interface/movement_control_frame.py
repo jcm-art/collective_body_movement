@@ -95,6 +95,7 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
 
         # Add dataset selection to frame
         self.load_dataset_button.grid(row=2, column=0, rowspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
+        # TODO - remove after migrated to canvas frame
         self.session_num_label.grid(row=2, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.session_number_entry.grid(row=2, column=2, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.headset_num_label.grid(row=3, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)

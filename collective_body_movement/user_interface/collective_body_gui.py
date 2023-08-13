@@ -25,27 +25,23 @@ class CollectiveBodyGuiPlaybackManager:
         loaded_dataset = self.gui.control_frame.get_loaded_dataset()
         metric_summary_statistics = self.gui.control_frame.get_metric_summary_statistics()
         selected_metric = self.gui.control_frame.get_chosen_metric()
-        self.gui.canvas_gallery.canvas_dict[0].start(loaded_dataset, selected_metric)
-        self.gui.canvas_gallery.canvas_dict[1].start(loaded_dataset, selected_metric)
+        self.gui.canvas_gallery.start_all(loaded_dataset, selected_metric)
         self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric)
     
     def stop_button_callback(self):
         print("Stop button pressed")
-        self.gui.canvas_gallery.canvas_dict[0].stop()
+        self.gui.canvas_gallery.stop_all()
         self.gui.canvas_gallery.canvas_dict[1].stop()
 
 
     def speed_1x_button_callback(self):
-        self.gui.canvas_gallery.canvas_dict[0].set_speed(1)
-        self.gui.canvas_gallery.canvas_dict[1].set_speed(1)
+        self.gui.canvas_gallery.set_speed_all(1)
 
     def speed_5x_button_callback(self):
-        self.gui.canvas_gallery.canvas_dict[0].set_speed(5)
-        self.gui.canvas_gallery.canvas_dict[1].set_speed(5)
+        self.gui.canvas_gallery.set_speed_all(5)
 
     def speed_10x_button_callback(self):
-        self.gui.canvas_gallery.canvas_dict[0].set_speed(10)
-        self.gui.canvas_gallery.canvas_dict[1].set_speed(10)
+        self.gui.canvas_gallery.set_speed_all(10)
 
 
 class ColletiveBodyMovementAnalysisGUI(tk.Frame):
@@ -72,7 +68,7 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         frame_padding = 2
 
         # Create canvas frame
-        self.canvas_gallery = ColletiveBodyMovementCanvasGallery(self, height=self.window_height*4/5, width=self.window_width/2, num_canvases=4)
+        self.canvas_gallery = ColletiveBodyMovementCanvasGallery(self, height=600, width=900, num_canvases=6)
 
         # Create control frame
         self.control_frame = ColletiveBodyMovementControlFrame(self, height=self.window_height*2/5, width=self.window_width/2)
@@ -119,10 +115,10 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         self._log_output("Packing widgets")
         frame_padding = 2
 
-        self.canvas_gallery.grid(row=0, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
-        self.control_frame.grid(row=0, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
-        self.metric_frame.grid(row=1, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
-        self.console_frame.grid(row=2, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.canvas_gallery.grid(row=0, column=0, rowspan=2, columnspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.control_frame.grid(row=0, column=2,columnspan=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.metric_frame.grid(row=1, column=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.console_frame.grid(row=2, column=0,columnspan=3, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
         
     def start_gui(self):
         self._log_output("Starting GUI")

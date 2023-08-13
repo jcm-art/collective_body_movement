@@ -22,6 +22,7 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
 
         # Set canvas frame sizes based on count
         self.canvas_frame_dimension = None
+        self.title_span = None
         self._update_canvas_frame_size()
 
         # Create and pack widgets
@@ -43,7 +44,7 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
         self._log_output("Packing widgets")
         
         # Add title to grid
-        self.canvas_gallery_title.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.canvas_gallery_title.grid(row=0, column=0,columnspan=self.title_span, sticky=tk.N+tk.S+tk.E+tk.W)
 
         # Add canvas frames to grid
         for i in range(0, self.num_canvases):
@@ -55,6 +56,17 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
             # Add canvas frame to grid
             self.canvas_dict[i].grid(row=row_val, column=col_val, sticky=tk.N+tk.S+tk.E+tk.W)
 
+    def start_all(self,loaded_dataset, selected_metric):
+        for num, canvas_frame in self.canvas_dict.items():
+            canvas_frame.start(loaded_dataset, selected_metric)
+
+    def stop_all(self):
+        for num, canvas_frame in self.canvas_dict.items():
+            canvas_frame.stop()
+    
+    def set_speed_all(self, speed):
+        for num, canvas_frame in self.canvas_dict.items():
+            canvas_frame.set_speed(speed)
 
     def _update_canvas_frame_size(self):
         # Get smallest dimension of total frame
@@ -74,25 +86,28 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
             match self.num_canvases:
                 case 1:
                     self.canvas_frame_dimension = min_dim
+                    self.title_span = 1
                 case 2:
                     if size_ratio >=2:
                         self.canvas_frame_dimension = min_dim
                     else:
                         self.canvas_frame_dimension = int(self.total_canvas_width / 2)
+                    self.title_span = 2
                 case 3:
                     if size_ratio >=3:
                         self.canvas_frame_dimension = min_dim
                     else:
                         self.canvas_frame_dimension = int(self.total_canvas_width / 3)
+                    self.title_span = 3
                 case _:
                     if size_ratio >=3:
                         self.canvas_frame_dimension = int(min_dim/2)
                     else:
                         self.canvas_frame_dimension =int(min(self.total_canvas_width / 3, min_dim/2))
 
+                    self.title_span = 3
 
 
-        
 
     def _log_output(self, to_output):
         print(f"{__class__.__name__}: {to_output}")
@@ -104,36 +119,74 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
         tk.Frame.__init__(self, master, background="green")
 
         # Configure the window grid inherited from tk.Frame
+        self._log_output(f"Configuring canvas frame {frame_num} ")
         self.canvas_dim = canvas_dimenson
-        print("Frame ")
+        self.frame_num = frame_num
+
+        # Initialize frame title text and other control inputs
+        self.session_num = None
+        self.actor_num = None
+        self._create_text_variables()
+        self._update_text_variables()
+
         self._configure_grid()
 
         # Initialize datasets and metrics for playback
         self.selected_dataset = None
         self.selected_metric = None
         self.visualization_index = 0
+        
 
         # Create and pack widgets
         self.create_wigets()
         self.pack_widgets()
 
     def create_wigets(self):
-        self._log_output("Creating widgets for GUI")
+        self._log_output(f"Creating widgets for canvas frame {self.frame_num}")
 
         # Create title
-        self.canvas_title = tk.Label(self, text="Movement Visualization", justify=tk.CENTER)
+        self.canvas_title = tk.Label(self, textvariable=self.frame_title_text, justify=tk.CENTER)
 
         # Create canvas
         self.vis_canvas = tk.Canvas(self, height=self.canvas_dim, width=self.canvas_dim, background="white")
+
+        # Create Session and headset options
+        self.session_number_entry = tk.Entry(self, textvariable=self.session_number_var, width=3) #  background="white"
+        self.headset_number_entry = tk.Entry(self, textvariable=self.headset_number_var, width=3)
+
+
+    def update_canvas_frame_session(self, session_num):
+        self.session_num = session_num
+        self._update_text_variables()
+
+    def update_canvas_frame_dat(self, actor_num):
+        self.actor_num = actor_num
+        self._update_text_variables()
+
+    def _create_text_variables(self):
+        self.frame_title_text = tk.StringVar()
+        self.session_number_var=tk.StringVar()
+        self.headset_number_var=tk.StringVar()
+
+    def _update_text_variables(self, session_value=None, actor_value=None):
+        self.frame_title_text.set(f"Session: {self.session_num} / Actor: {self.actor_num}")
+        self.session_number_var.set(session_value)
+        self.headset_number_var.set(actor_value)
+
 
     def pack_widgets(self):
         self._log_output("Packing widgets")
         
         # Add title to grid
-        self.canvas_title.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.canvas_title.grid(row=0, column=0,columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
 
         # Add canvas to grid
-        self.vis_canvas.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.vis_canvas.grid(row=1, column=0, columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        # Add selection options to grid
+        self.session_number_entry.grid(row=2, column=0, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.headset_number_entry.grid(row=2, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
+
 
 
     def start(self, selected_dataset, selected_metric):
