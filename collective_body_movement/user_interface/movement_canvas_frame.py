@@ -1,14 +1,109 @@
 
 import tkinter as tk
+import numpy as np
+
+
+class ColletiveBodyMovementCanvasGallery(tk.Frame):
+        
+    def __init__(self,master, height=810, width=1620, num_canvases=1) -> None:
+        # Initiate the base frame
+        tk.Frame.__init__(self, master, background="teal")
+
+        # Define the starting number of canvases
+        if num_canvases <=6 or num_canvases < 1 :
+            self.num_canvases = num_canvases
+        else:
+            raise Exception("Number of canvases must be between 1 and 6")
+        self.canvas_dict = {}
+        self.total_canvas_height = height
+        self.total_canvas_width = width
+
+        self.canvas_indices = None
+
+        # Set canvas frame sizes based on count
+        self.canvas_frame_dimension = None
+        self._update_canvas_frame_size()
+
+        # Create and pack widgets
+        self.create_wigets()
+        self.pack_widgets()
+
+    def create_wigets(self):
+        self._log_output("Creating CanvasFrames for CanvasGallery")
+
+        
+        for i in range(0,self.num_canvases):
+            # Create canvas frame
+            self.canvas_dict[i] = ColletiveBodyMovementCanvasFrame(self, height=self.canvas_frame_dimension, width=self.canvas_frame_dimension, canvas_dimenson=self.canvas_frame_dimension)
+            
+        # Create title
+        self.canvas_gallery_title = tk.Label(self, text="Movement Visualizations", justify=tk.CENTER)
+
+    def pack_widgets(self):
+        self._log_output("Packing widgets")
+        
+        # Add title to grid
+        self.canvas_gallery_title.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        # Add canvas frames to grid
+        for i in range(0, self.num_canvases):
+            # Set canvas frame positions
+            row_val = self.canvas_indices[i][0]+1
+            col_val = self.canvas_indices[i][1]
+            print(f"row {row_val}, col {col_val}")
+
+            # Add canvas frame to grid
+            self.canvas_dict[i].grid(row=row_val, column=col_val, sticky=tk.N+tk.S+tk.E+tk.W)
+
+
+    def _update_canvas_frame_size(self):
+        # Get smallest dimension of total frame
+        min_dim = np.min([self.total_canvas_height, self.total_canvas_width])
+        max_dim = np.max([self.total_canvas_height, self.total_canvas_width])
+        size_ratio = int(np.floor(max_dim/min_dim))
+
+        # TODO - implement automatic resizing for horizontal and vertical
+        self.landscape_gallery = True 
+
+        # Allocate dimensions based on number of canvases
+        if self.landscape_gallery:
+            # Set indices of canvases
+            self.canvas_indices = [(0,0), (0,1), (0,2), (0,1), (1,1), (2,1)]
+
+            match self.num_canvases:
+                case 1:
+                    self.canvas_frame_height = min_dim
+                    self.canvas_frame_width = min_dim
+                case 2:
+                    if size_ratio >=2:
+                        self.canvas_frame_height = min_dim
+                        self.canvas_frame_width = min_dim
+                    else:
+                        self.canvas_frame_height = int(self.total_canvas_width / 2)
+                        self.canvas_frame_width = int(self.total_canvas_width / 2)
+                case 3:
+                    if size_ratio >=3:
+                        self.canvas_frame_height = min_dim
+                        self.canvas_frame_width = min_dim
+                    else:
+                        self.canvas_frame_height = int(self.total_canvas_width / 3)
+                        self.canvas_frame_width = int(self.total_canvas_width / 3)
+
+
+
+        
+
+    def _log_output(self, to_output):
+        print(f"{__class__.__name__}: {to_output}")
 
 class ColletiveBodyMovementCanvasFrame(tk.Frame):
 
-    def __init__(self,master, height, width) -> None:
+    def __init__(self,master, height, width, canvas_dimenson=500) -> None:
         # Initiate the base frame
         tk.Frame.__init__(self, master, background="green")
 
         # Configure the window grid inherited from tk.Frame
-        self.canvas_dim = 500
+        self.canvas_dim = canvas_dimenson
         self._configure_grid()
 
         # Initialize datasets and metrics for playback
@@ -127,3 +222,4 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
 
     def _log_output(self, to_output):
         print(f"{__class__.__name__}: {to_output}")
+
