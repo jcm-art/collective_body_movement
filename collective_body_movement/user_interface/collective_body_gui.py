@@ -15,6 +15,9 @@ class CollectiveBodyGuiPlaybackManager:
         # TODO - remove list and eliminate hard coding
         self.gui.control_frame.start_canvas_button.configure(command=self.start_button_callback)
         self.gui.control_frame.stop_canvas_button.configure(command=self.stop_button_callback)
+        self.gui.control_frame.speed_1x_button.configure(command=self.speed_1x_button_callback)
+        self.gui.control_frame.speed_5x_button.configure(command=self.speed_5x_button_callback)
+        self.gui.control_frame.speed_10x_button.configure(command=self.speed_10x_button_callback)
 
     def start_button_callback(self):
         print("Play button pressed")
@@ -28,6 +31,15 @@ class CollectiveBodyGuiPlaybackManager:
     def stop_button_callback(self):
         print("Stop button pressed")
         self.gui.canvas_frame.stop()
+
+    def speed_1x_button_callback(self):
+        self.gui.canvas_frame.set_speed(1)
+    
+    def speed_5x_button_callback(self):
+        self.gui.canvas_frame.set_speed(5)
+
+    def speed_10x_button_callback(self):
+        self.gui.canvas_frame.set_speed(10)
 
 
 class ColletiveBodyMovementAnalysisGUI(tk.Frame):

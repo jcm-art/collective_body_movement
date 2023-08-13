@@ -68,6 +68,11 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self.start_canvas_button = tk.Button(self, text="Start")
         self.stop_canvas_button = tk.Button(self, text="Stop")
         self.export_canvas_button = tk.Button(self, text="Export Vis", command=self._export_visualization)
+        
+        # 1x / 5x / 10x Speed
+        self.speed_1x_button = tk.Button(self, text="1x")
+        self.speed_5x_button = tk.Button(self, text="5x")
+        self.speed_10x_button = tk.Button(self, text="10x")
 
 
 
@@ -102,7 +107,9 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self.start_canvas_button.grid(row=5, column=0, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.stop_canvas_button.grid(row=5, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.export_canvas_button.grid(row=5, column=2, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
-
+        self.speed_1x_button.grid(row=6, column=0, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.speed_5x_button.grid(row=6, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.speed_10x_button.grid(row=6, column=2, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
 
     def _configure_grid(self):
         self.grid(sticky=tk.N+tk.S+tk.E+tk.W)
