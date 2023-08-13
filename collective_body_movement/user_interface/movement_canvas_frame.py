@@ -34,7 +34,7 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
         
         for i in range(0,self.num_canvases):
             # Create canvas frame
-            self.canvas_dict[i] = ColletiveBodyMovementCanvasFrame(self, height=self.canvas_frame_dimension, width=self.canvas_frame_dimension, canvas_dimenson=self.canvas_frame_dimension)
+            self.canvas_dict[i] = ColletiveBodyMovementCanvasFrame(self, frame_num=i, height=self.canvas_frame_dimension, width=self.canvas_frame_dimension, canvas_dimenson=self.canvas_frame_dimension)
             
         # Create title
         self.canvas_gallery_title = tk.Label(self, text="Movement Visualizations", justify=tk.CENTER)
@@ -70,24 +70,21 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
             # Set indices of canvases
             self.canvas_indices = [(0,0), (0,1), (0,2), (0,1), (1,1), (2,1)]
 
+            # TODO - potnetial to split into height and width to account for toolbar space
             match self.num_canvases:
                 case 1:
                     self.canvas_frame_height = min_dim
                     self.canvas_frame_width = min_dim
                 case 2:
                     if size_ratio >=2:
-                        self.canvas_frame_height = min_dim
-                        self.canvas_frame_width = min_dim
+                        self.canvas_frame_dimension = min_dim
                     else:
-                        self.canvas_frame_height = int(self.total_canvas_width / 2)
-                        self.canvas_frame_width = int(self.total_canvas_width / 2)
+                        self.canvas_frame_dimension = int(self.total_canvas_width / 2)
                 case 3:
                     if size_ratio >=3:
-                        self.canvas_frame_height = min_dim
-                        self.canvas_frame_width = min_dim
+                        self.canvas_frame_dimension = min_dim
                     else:
-                        self.canvas_frame_height = int(self.total_canvas_width / 3)
-                        self.canvas_frame_width = int(self.total_canvas_width / 3)
+                        self.canvas_frame_dimension = int(self.total_canvas_width / 3)
 
 
 
@@ -98,12 +95,13 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
 
 class ColletiveBodyMovementCanvasFrame(tk.Frame):
 
-    def __init__(self,master, height, width, canvas_dimenson=500) -> None:
+    def __init__(self,master, frame_num, height, width, canvas_dimenson=500) -> None:
         # Initiate the base frame
         tk.Frame.__init__(self, master, background="green")
 
         # Configure the window grid inherited from tk.Frame
         self.canvas_dim = canvas_dimenson
+        print("Frame ")
         self._configure_grid()
 
         # Initialize datasets and metrics for playback

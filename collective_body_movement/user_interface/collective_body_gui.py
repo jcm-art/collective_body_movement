@@ -2,7 +2,7 @@
 
 import tkinter as tk
 
-from collective_body_movement.user_interface.movement_canvas_frame import ColletiveBodyMovementCanvasFrame
+from collective_body_movement.user_interface.movement_canvas_frame import ColletiveBodyMovementCanvasGallery
 from collective_body_movement.user_interface.movement_control_frame import ColletiveBodyMovementControlFrame
 from collective_body_movement.user_interface.movement_metric_frame import ColletiveBodyMovementMetricFrame
 from collective_body_movement.user_interface.movement_console_frame import ColletiveBodyMovementConsoleFrame
@@ -25,21 +25,27 @@ class CollectiveBodyGuiPlaybackManager:
         loaded_dataset = self.gui.control_frame.get_loaded_dataset()
         metric_summary_statistics = self.gui.control_frame.get_metric_summary_statistics()
         selected_metric = self.gui.control_frame.get_chosen_metric()
-        self.gui.canvas_frame.start(loaded_dataset, selected_metric)
+        self.gui.canvas_gallery.canvas_dict[0].start(loaded_dataset, selected_metric)
+        self.gui.canvas_gallery.canvas_dict[1].start(loaded_dataset, selected_metric)
         self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric)
     
     def stop_button_callback(self):
         print("Stop button pressed")
-        self.gui.canvas_frame.stop()
+        self.gui.canvas_gallery.canvas_dict[0].stop()
+        self.gui.canvas_gallery.canvas_dict[1].stop()
+
 
     def speed_1x_button_callback(self):
-        self.gui.canvas_frame.set_speed(1)
-    
+        self.gui.canvas_gallery.canvas_dict[0].set_speed(1)
+        self.gui.canvas_gallery.canvas_dict[1].set_speed(1)
+
     def speed_5x_button_callback(self):
-        self.gui.canvas_frame.set_speed(5)
+        self.gui.canvas_gallery.canvas_dict[0].set_speed(5)
+        self.gui.canvas_gallery.canvas_dict[1].set_speed(5)
 
     def speed_10x_button_callback(self):
-        self.gui.canvas_frame.set_speed(10)
+        self.gui.canvas_gallery.canvas_dict[0].set_speed(10)
+        self.gui.canvas_gallery.canvas_dict[1].set_speed(10)
 
 
 class ColletiveBodyMovementAnalysisGUI(tk.Frame):
@@ -48,8 +54,8 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         # Initiate the base frame
         tk.Frame.__init__(self, master)
 
-        self.window_width = 900
-        self.window_height = 600
+        self.window_width = 1920
+        self.window_height = 1080
 
         # Configure the window grid inherited from tk.Frame
         self._configure_grid()
@@ -66,7 +72,7 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         frame_padding = 2
 
         # Create canvas frame
-        self.canvas_frame = ColletiveBodyMovementCanvasFrame(self, height=self.window_height*4/5, width=self.window_width/2)
+        self.canvas_gallery = ColletiveBodyMovementCanvasGallery(self, height=self.window_height*4/5, width=self.window_width/2, num_canvases=2)
 
         # Create control frame
         self.control_frame = ColletiveBodyMovementControlFrame(self, height=self.window_height*2/5, width=self.window_width/2)
@@ -77,6 +83,7 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         # Create console frame
         self.console_frame = ColletiveBodyMovementConsoleFrame(self, height=self.window_height*1/5, width=self.window_width)
         
+    # TODO - remove deprecated code
     def create_wigets(self):
         self._log_output("Creating widgets for GUI")
 
@@ -112,7 +119,7 @@ class ColletiveBodyMovementAnalysisGUI(tk.Frame):
         self._log_output("Packing widgets")
         frame_padding = 2
 
-        self.canvas_frame.grid(row=0, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.canvas_gallery.grid(row=0, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
         self.control_frame.grid(row=0, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
         self.metric_frame.grid(row=1, column=1, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
         self.console_frame.grid(row=2, column=0, rowspan=2, padx=frame_padding, pady=frame_padding, sticky=tk.N+tk.S+tk.E+tk.W)
