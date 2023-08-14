@@ -188,7 +188,6 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
         self.headset_number_entry.grid(row=2, column=1, columnspan=1, sticky=tk.N+tk.S+tk.E+tk.W)
 
 
-
     def start(self, selected_dataset, selected_metric):
         self._log_output("Starting Movement Visualization")
 

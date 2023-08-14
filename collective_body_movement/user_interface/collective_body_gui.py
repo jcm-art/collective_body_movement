@@ -19,6 +19,9 @@ class CollectiveBodyGuiPlaybackManager:
         self.gui.control_frame.speed_5x_button.configure(command=self.speed_5x_button_callback)
         self.gui.control_frame.speed_10x_button.configure(command=self.speed_10x_button_callback)
 
+    def load_datasets_callback(self):
+        print("Loading datasets for all visualizations...")
+
     def start_button_callback(self):
         print("Play button pressed")
         # TODO - do not restart if already in progress

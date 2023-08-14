@@ -53,8 +53,9 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         self.database_path_entry = tk.Entry(self, textvariable=self.database_location) #  background="white"
 
         # Load dataset widgets
-        self.load_dataset_button = tk.Button(self, text="Load Dataset", command=self._load_dataset)
+        self.load_dataset_button = tk.Button(self, text="Load Datasets")
         self.session_num_label = tk.Label(self, text="Session Number: ", justify=tk.RIGHT)
+        # TODO - remove extra code
         self.session_number_entry = tk.Entry(self, textvariable=self.session_number_var) #  background="white"
         self.headset_num_label = tk.Label(self, text="Headset Number: ", justify=tk.RIGHT)
         self.headset_number_entry = tk.Entry(self, textvariable=self.headset_number_var)
