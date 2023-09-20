@@ -13,6 +13,7 @@ class CollectiveBodyGuiPlaybackManager:
         self.gui = gui
 
         # TODO - remove list and eliminate hard coding
+        self.gui.control_frame.load_dataset_button.configure(command=self.start_button_callback)
         self.gui.control_frame.start_canvas_button.configure(command=self.start_button_callback)
         self.gui.control_frame.stop_canvas_button.configure(command=self.stop_button_callback)
         self.gui.control_frame.speed_1x_button.configure(command=self.speed_1x_button_callback)
@@ -21,6 +22,16 @@ class CollectiveBodyGuiPlaybackManager:
 
     def load_datasets_callback(self):
         print("Loading datasets for all visualizations...")
+        metric_summary_statistics = self.gui.control_frame.get_metric_summary_statistics()
+        selected_metric = self.gui.control_frame.get_chosen_metric()
+
+        # TOD0 - Create dictionary for loading datasets
+        frame_dataset_dict = self.gui.canvas_gallery.get_frame_dataset_dict()
+        frame_dataset_dict = self.gui.control_frame.load_frame_datasets(frame_dataset_dict)
+
+        self.gui.canvas_gallery.load_all(frame_dataset_dict, selected_metric)
+        self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric)
+
 
     def start_button_callback(self):
         print("Play button pressed")
@@ -28,8 +39,8 @@ class CollectiveBodyGuiPlaybackManager:
         loaded_dataset = self.gui.control_frame.get_loaded_dataset()
         metric_summary_statistics = self.gui.control_frame.get_metric_summary_statistics()
         selected_metric = self.gui.control_frame.get_chosen_metric()
-        self.gui.canvas_gallery.start_all(loaded_dataset, selected_metric)
-        self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric)
+        self.gui.canvas_gallery.start_all(loaded_dataset, selected_metric) # TODO - fix to remove, use stored dataset
+        self.gui.metric_frame.load_metric(metric_summary_statistics, selected_metric) # TODO - restart materic, not reload
     
     def stop_button_callback(self):
         print("Stop button pressed")

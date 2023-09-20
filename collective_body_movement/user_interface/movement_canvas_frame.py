@@ -15,6 +15,7 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
         else:
             raise Exception("Number of canvases must be between 1 and 6")
         self.canvas_dict = {}
+        self.canvas_dataset_dict = {}
         self.total_canvas_height = height
         self.total_canvas_width = width
 
@@ -67,6 +68,15 @@ class ColletiveBodyMovementCanvasGallery(tk.Frame):
     def set_speed_all(self, speed):
         for num, canvas_frame in self.canvas_dict.items():
             canvas_frame.set_speed(speed)
+
+    # TODO - implement dictionary method
+    def get_frame_dataset_dict(self):
+        pass
+
+    # TOD0 - replace with dictionary method
+    def load_datasets(self, loaded_dataset, selected_metric):
+        for num, canvas_frame in self.canvas_dict.items():
+            canvas_frame.load_frame_dataset(loaded_dataset, selected_metric)
 
     def _update_canvas_frame_size(self):
         # Get smallest dimension of total frame
@@ -162,6 +172,18 @@ class ColletiveBodyMovementCanvasFrame(tk.Frame):
     def update_canvas_frame_dat(self, actor_num):
         self.actor_num = actor_num
         self._update_text_variables()
+
+    def load_frame_dataset(self, raw_movement_df, selected_metric):
+        self.selected_metric = selected_metric
+        session_num=self.session_number_var.get()
+        headset_num=self.headset_number_var.get()
+
+        # TODO - add checks for none / invalid datasets
+        
+        self._log_output(f"Loading session number {session_num} with headset number {headset_num}")
+
+        self.loaded_dataset = raw_movement_df.loc[(raw_movement_df["session_number"] == int(session_num)) & (raw_movement_df["headset_number"] == int(headset_num))]
+        self._log_output(f"Single dataset loaded with {len(self.loaded_dataset)} entries")
 
     def _create_text_variables(self):
         self.frame_title_text = tk.StringVar()

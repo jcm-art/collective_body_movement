@@ -26,8 +26,19 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
 
         self._add_widgets_to_grid()
 
+    # TODO - remove dataset load
     def get_loaded_dataset(self):
         return self.loaded_dataset
+    
+    def load_frame_datasets(self, frame_dataset_dict):
+       # TODO - error checking for loading database
+       # Go through dictionary of canvas frames and load datasets from database
+        for frame, dataset_dict in frame_dataset_dict:
+            session_num = dataset_dict["session_num"]
+            actor_num = dataset_dict["headset_num"]
+            dataset_dict["dataset"] = self._load_dataset(session_num, actor_num)
+
+        return dataset_dict     
     
     def get_metric_summary_statistics(self):
         return self.algorithm_metric_statistics
@@ -55,7 +66,7 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
         # Load dataset widgets
         self.load_dataset_button = tk.Button(self, text="Load Datasets")
         self.session_num_label = tk.Label(self, text="Session Number: ", justify=tk.RIGHT)
-        # TODO - remove extra code
+        # TODO - remove extra code for sessiion and headset numbers
         self.session_number_entry = tk.Entry(self, textvariable=self.session_number_var) #  background="white"
         self.headset_num_label = tk.Label(self, text="Headset Number: ", justify=tk.RIGHT)
         self.headset_number_entry = tk.Entry(self, textvariable=self.headset_number_var)
@@ -147,14 +158,17 @@ class ColletiveBodyMovementControlFrame(tk.Frame):
 
 
 
-    def _load_dataset(self):
-        session_num=self.session_number_var.get()
-        headset_num=self.headset_number_var.get()
+    def _load_dataset(self, session_num, actor_num):
+        # TODO - remove
+        #session_num=self.session_number_var.get()
+        #headset_num=self.headset_number_var.get()
         
-        self._log_output(f"Loading session number {session_num} with headset number {headset_num}")
+        self._log_output(f"Loading session number {session_num} with headset number {actor_num}")
 
-        self.loaded_dataset = self.raw_movement_df.loc[(self.raw_movement_df["session_number"] == int(session_num)) & (self.raw_movement_df["headset_number"] == int(headset_num))]
+        loaded_dataset = self.raw_movement_df.loc[(self.raw_movement_df["session_number"] == int(session_num)) & (self.raw_movement_df["headset_number"] == int(actor_num))]
         self._log_output(f"Single dataset loaded with {len(self.loaded_dataset)} entries")
+
+        return loaded_dataset
 
     def _select_metric(self):
         self.selected_metric = self.metric_option_var.get()
