@@ -31,7 +31,7 @@ def fetch_database_for_application(database_directory, metrics_directory):
         metrics_directory=metrics_directory)
     return cbdm
 
-cbdm = fetch_database_for_application("../../data/movement_database/", "../../data/movement_database/")
+cbdm = fetch_database_for_application("../data/movement_database/", "../data/movement_database/")
 
 # Select Dataset,  Participant ID, and Metric for visualization
 st.header("Select a Dataset and Paricipant ID")

@@ -62,9 +62,8 @@ class CollectiveBodyDataManager:
         # TODO - implement metric selection
         pass    
     
-    def get_chosen_metric(self):
-        # TODO - implement metric selection
-        pass
+    def get_chosen_metric(self, metric_key):
+        return self.algorithm_metrics_df[["data_collect_name", metric_key]]
 
     def _load_database(self):
         self._log_output(f"Loading database at path {self.raw_movement_database_path}")
@@ -73,7 +72,7 @@ class CollectiveBodyDataManager:
         return raw_movement_df
 
     def _load_algorithm_metrics(self):
-        self._log_output(f"Loading merics at path {self.movement_metrics_path}")
+        self._log_output(f"Loading metrics at path {self.movement_metrics_path}")
         alogirthm_metrics_df = pd.read_csv(self.movement_metrics_path)
         self._log_output(f"Database load completed with {len(alogirthm_metrics_df)} entries")
         return alogirthm_metrics_df
