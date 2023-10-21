@@ -9,7 +9,7 @@ import streamlit as st
 
 from typing import Tuple
 
-from collective_body_movement.datamanager.data_manager import CollectiveBodyDataManager
+from datamanager.data_manager import CollectiveBodyDataManager
 
 
 # Streamlit page configuration and formatting
