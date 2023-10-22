@@ -20,6 +20,12 @@ class CollectiveBodyDataManager:
         self.algorithm_metrics_df = self._load_algorithm_metrics()
         self.metrics_summaries_dict, self.metrics_options_list = self._load_metrics_options()
 
+    def __init__(self, raw_movement_df, algorithm_metrics_df, metrics_json):
+        self.raw_movement_df = raw_movement_df
+        self.algorithm_metrics_df = algorithm_metrics_df
+        self.metrics_summaries_dict, self.metrics_options_list = self._set_metrics_options(metrics_json)
+
+
     def get_session_IDs(self):
         return sorted(list(self.raw_movement_df["session_number"].unique()))
     
@@ -84,6 +90,14 @@ class CollectiveBodyDataManager:
         # Load metrics options
         with open(self.alogirthm_metric_summary_path) as json_file:
             algorithm_metric_statistics = json.load(json_file)
+
+        options_keys = algorithm_metric_statistics.keys()
+
+        return algorithm_metric_statistics, options_keys
+    
+    def _set_metrics_options(self, metrics_json):
+        self._log_output("Setting metric options")
+        algorithm_metric_statistics = metrics_json
 
         options_keys = algorithm_metric_statistics.keys()
 
