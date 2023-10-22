@@ -33,10 +33,11 @@ def fetch_database_for_application(database_directory, metrics_directory):
     return cbdm
 
 @st.cache_resource
-def set_uploaded_data(metrics_file, movement_file):
+def set_uploaded_data(metrics_file, movement_file, metrics_json):
     cbdm = CollectiveBodyDataManager(
         raw_movement_df=pd.read_csv(movement_file),
-        algorithm_metrics_df=pd.read_csv(metrics_file)
+        algorithm_metrics_df=pd.read_csv(metrics_file),
+        metrics_json=metrics_json
     )
     return cbdm
 
@@ -98,12 +99,7 @@ def run_streamlit_app():
         frames_to_skip = 1
         duration = 0
 
-    '''
-    step=3
-    xx = x[0:-1:step]
-    yy = y[0:-1:step]
-    N = len(xx)
-    '''
+
     url = "https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv"
     dataset = pd.read_csv(url)
 
@@ -279,11 +275,29 @@ def run_streamlit_app():
     dataset_metric = all_metrics[all_metrics["data_collect_name"] == dataset_id][user_metric_selection].values[0]
     metric_array = all_metrics[user_metric_selection].to_numpy()
 
+
+    def color_to_rgb(color):
+        return tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+
+    def rgb_to_color(rgb_tuple):
+        return f'#%02x%02x%02x' % rgb_tuple
+
+    def interpolate_colors(min_val, max_val, min_color, last_color, metric_val):
+        min_rgb = color_to_rgb(min_color)
+        last_rgb = color_to_rgb(last_color)
+        rgb_range = [int(min_rgb[i] + (last_rgb[i]-min_rgb[i])*metric_val/(max_val-min_val)) for i in range(3)]
+        return rgb_to_color(tuple(rgb_range))
+
+    metric_color = interpolate_colors(metric_array.min(), metric_array.max(), first_color, second_color, dataset_metric)
+
+    html_string = f"<p style=\"color:{metric_color}\">This is the user's metric color.</p>"
+    st.markdown(html_string, unsafe_allow_html=True)
+
     metrics_fig.add_trace(
         go.Histogram(x=all_metrics[user_metric_selection]),
         row=1, col=1)
     metrics_fig.add_trace(
-        go.Scatter(x=[dataset_metric], y=[0], mode="markers", marker=dict(color="red", size=10)),
+        go.Scatter(x=[dataset_metric], y=[0], mode="markers", marker=dict(color=metric_color, size=10)),
         row=1, col=1
     )
     # TODO - add custom color heatmap Custom Heatmap Color scale with Graph Objects https://plotly.com/python/colorscales/
@@ -300,18 +314,6 @@ def run_streamlit_app():
     #color_array =[first_color*metric/(max_metric-min_metric)+second_color*(max_metric-metric)/(max_metric-min_metric) for metric in metric_array]
 
 
-    def color_to_rgb(color):
-        return tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-
-    def rgb_to_color(rgb_tuple):
-        return f'#%02x%02x%02x' % rgb_tuple
-
-    def interpolate_colors(min_val, max_val, min_color, last_color, metric_val):
-        min_rgb = color_to_rgb(min_color)
-        last_rgb = color_to_rgb(last_color)
-        rgb_range = [int(min_rgb[i] + (last_rgb[i]-min_rgb[i])*metric_val/(max_val-min_val)) for i in range(3)]
-        return rgb_to_color(tuple(rgb_range))
-
     # colors = [interpolate_colors(min_metric, max_metric, first_color, second_color, metric) for metric in metric_array]
     #dist_fig = ff.create_distplot([metric_array], ['distplot'], colors=colors)
     #st.plotly_chart(dist_fig)
@@ -321,7 +323,9 @@ def run_streamlit_app():
 # Define an expander at the top to provide more information for the app
 with st.expander("About this app"):
     st.write('This app allows the user to view and analyze movement logs from actors in the Collective Body work. For more information, visit https://www.sarahsilverblatt.com/about')
-    metrics_file = st.file_uploader("Upload metrics file", type=["csv"])
-    movement_file = st.file_uploader("Upload raw data movement file", type=["csv"])
-    metrics_json = st.file_uploader("Upload metrics json file", type=["json"])
-    st.button("Run Streamlit App", on_click=run_streamlit_app)
+
+metrics_file = st.file_uploader("Upload metrics file", type=["csv"])
+movement_file = st.file_uploader("Upload raw data movement file", type=["csv"])
+metrics_json = st.file_uploader("Upload metrics json file", type=["json"])
+
+run_streamlit_app()

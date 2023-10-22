@@ -97,7 +97,7 @@ class CollectiveBodyDataManager:
     
     def _set_metrics_options(self, metrics_json):
         self._log_output("Setting metric options")
-        algorithm_metric_statistics = metrics_json
+        algorithm_metric_statistics = json.load(metrics_json)
 
         options_keys = algorithm_metric_statistics.keys()
 
