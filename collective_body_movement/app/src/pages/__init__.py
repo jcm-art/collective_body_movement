@@ -4,12 +4,14 @@
 
 from typing import Dict, Type
 
-from .metrics_analysis import MetricsAnalysisPage
+from .user_metrics import MetricsAnalysisPage
+from . metrics_summary import MetricsSummaryPage
 from ..utils import StreamlitPage
 
 
 CB_PAGE_MAP: Dict[str, Type[StreamlitPage]] = {
-    "Metrics Analysis": MetricsAnalysisPage,
+    "User Metrics": MetricsAnalysisPage,
+    "Metrics Summary": MetricsSummaryPage,
 }
 
 __all__ = ["CB_PAGE_MAP"]

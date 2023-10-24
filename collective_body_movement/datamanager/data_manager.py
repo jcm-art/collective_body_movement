@@ -5,7 +5,10 @@ import pathlib
 
 class CollectiveBodyDataManager:
 
-    def __init__(self, database_directory, metrics_directory = None):
+    def __init__(self):
+        self._log_output("Initializing CollectiveBodyDataManager")
+    
+    def load_data_from_path(self, database_directory: str, metrics_directory: str = None):
         # Save databaste and metrics paths; if no separate metrics path, default to database
         if metrics_directory is None:
             metrics_directory = database_directory
@@ -20,7 +23,7 @@ class CollectiveBodyDataManager:
         self.algorithm_metrics_df = self._load_algorithm_metrics()
         self.metrics_summaries_dict, self.metrics_options_list = self._load_metrics_options()
 
-    def __init__(self, raw_movement_df, algorithm_metrics_df, metrics_json):
+    def set_data_from_files(self, raw_movement_df: pd.DataFrame, algorithm_metrics_df: pd.DataFrame, metrics_json):
         self.raw_movement_df = raw_movement_df
         self.algorithm_metrics_df = algorithm_metrics_df
         self.metrics_summaries_dict, self.metrics_options_list = self._set_metrics_options(metrics_json)
