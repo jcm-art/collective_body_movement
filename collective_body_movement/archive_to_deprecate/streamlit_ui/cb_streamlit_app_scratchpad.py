@@ -51,12 +51,17 @@ user_metric_selection = st.selectbox(
     options=metric_options,
 )
 
+chapter_options = [1,2,3]
+user_chapter_selection_static = st.selectbox("Select a chapter?", chapter_options,index=0)
+
+
 # Plot the selected dataset
 
 st.header("Data plots")
+
 st.subheader("Static Movement Chart")
 
-movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection, user_headset_selection, normalize=True, chapter_range=[1,3])
+movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection, user_headset_selection, chapter_num=user_chapter_selection_static, normalize=True)
 movement_df = movement_data_dictionary["dataset"]
 st.write(movement_df)
 
@@ -77,10 +82,9 @@ st.header("Tailed animated movement")
 user_dataset_selection_path = st.selectbox("Which dataset would you like to view for the path animation?", dataset_options, index=0)
 headset_options = cbdm.get_actor_IDs(user_dataset_selection)
 user_headset_selection_path = st.selectbox("Which actor would you like to view for the path animation?", headset_options, index=0)
-chapter_options = [1,2,3]
 user_chapter_selection_path = st.selectbox("Which chapter would you like to see for the path animation?", chapter_options,index=0)
 
-movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection_path, user_headset_selection_path, normalize=True, chapter_range=[1,3])
+movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection_path, user_headset_selection_path, chapter_num=user_chapter_selection_path, normalize=True)
 movement_df = movement_data_dictionary["dataset"]
 chapter_df = movement_df[movement_df["chapitre"] == user_chapter_selection_path]
 
@@ -129,14 +133,81 @@ fig = go.Figure(
 
 st.write(fig)
 
+st.header("Animated movement with slider")
+
+
+st.subheader("Advanced animations")
+
+st.write("TODO - add advanced animations using plotly and javascript")
+
+st.subheader("Frame based animation")
+
+
+frame_figure = {
+    'data': [],
+    'layout': {},
+    'frames': [],
+    'config': {'scrollzoom': True}
+}
+
+# fill in most of layout
+frame_figure['layout']['xaxis'] = {'range': [30, 85], 'title': 'Life Expectancy', 'gridcolor': '#FFFFFF'}
+frame_figure['layout']['yaxis'] = {'title': 'GDP per Capita', 'type': 'log', 'gridcolor': '#FFFFFF'}
+frame_figure['layout']['hovermode'] = 'closest'
+frame_figure['layout']['plot_bgcolor'] = 'rgb(223, 232, 243)'
+
+
+
+frame = {'data': [], 'name': f"Step: {0}"}
+
+
+st.write
+
+# Add traces, one for each slider step
+for step in np.arange(0, 5, 0.1):
+    fig.add_trace(
+        go.Scatter(
+            visible=False,
+            line=dict(color="#00CED1", width=6),
+            name="𝜈 = " + str(step),
+            x=np.arange(0, 10, 0.01),
+            y=np.sin(step * np.arange(0, 10, 0.01))))
+
+# Make 10th trace visible
+fig.data[10].visible = True
+
+# Create and add slider
+steps = []
+for i in range(len(fig.data)):
+    step = dict(
+        method="update",
+        args=[{"visible": [False] * len(fig.data)},
+              {"title": "Slider switched to step: " + str(i)}],  # layout attribute
+    )
+    step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+    steps.append(step)
+
+sliders = [dict(
+    active=10,
+    currentvalue={"prefix": "Frequency: "},
+    pad={"t": 50},
+    steps=steps
+)]
+
+fig.update_layout(
+    sliders=sliders
+)
+
+st.write(fig)
 
 st.header("Basic animated movement")
 
 user_dataset_selection_basic = st.selectbox("Which dataset would you like to view for the basic animation?", dataset_options, index=0)
 headset_options = cbdm.get_actor_IDs(user_dataset_selection)
 user_headset_selection_basic = st.selectbox("Which actor would you like to view for the basic animation?", headset_options, index=0)
-
-movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection_basic, user_headset_selection_basic, normalize=True, chapter_range=[1,3])
+user_chapter_selection_basic = st.selectbox("Which chapter would you like to see for basic animation?", chapter_options,index=0)
+# TODO - add additional chapters
+movement_data_dictionary = cbdm.get_frame_dataset_dict(user_dataset_selection_basic, user_headset_selection_basic,  chapter_num=user_chapter_selection_path, normalize=True)
 movement_df = movement_data_dictionary["dataset"]
 
 fig = px.scatter(
