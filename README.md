@@ -28,7 +28,7 @@ source cbenv/bin/activate
 To run the full data ingest and processing pipeline, execute: 
 
 ```
-python3 collective_body_movement/data_ingest_analysis_pipeline.py
+python3 collective_body_movement/pipeline/data_ingest_analysis_pipeline.py
 ``` 
 
 Data import can take a significant amount of time. To run a quick trial run with a reduced input, pass the argument:
@@ -46,6 +46,9 @@ To skip plot generation, the following option can be added:
 '''
 --skip_plots
 '''
+
+python3 collective_body_movement/pipeline/data_ingest_analysis_pipeline.py --quick_run --skip_plots
+
 
 
 ### Data Loading
