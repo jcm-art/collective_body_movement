@@ -10,8 +10,9 @@ import pandas as pd
 
 from collective_body_movement.ingest.directory_ingest import DirectoryParserBolt
 from collective_body_movement.preprocessing.cleaner import DataCleanerBolt
-from collective_body_movement.preprocessing.kinematics import KinematicsBolt
-from collective_body_movement.preprocessing.metrics import MetricsBolt
+from collective_body_movement.analysis.fundamental_kinematics import FundamentalKinematicsBolt
+from collective_body_movement.analysis.derived_kinematics import DerivedKinematicsBolt
+from collective_body_movement.analysis.metrics import MetricsBolt
 from collective_body_movement.postprocessing.aggregation import AggregatorBolt
 from collective_body_movement.postprocessing.reports import ReportBolt
 from collective_body_movement.utils import CollectiveBodyBolt
@@ -30,13 +31,15 @@ class CollectiveBodyDataPipeline:
         # TODO - add configuration, manage with pipeline instead of manual stages
         self.directory_parser = DirectoryParserBolt(self.input_file_info, save_intermediate_output=True)
         self.data_cleaner = DataCleanerBolt(self.monolithic_database_path, save_intermediate_output=True)
-        self.kinematics_generator = KinematicsBolt(self.temporary_kinematics_path, save_intermediate_output=True)
+        self.fundamental_kinematics_generator = FundamentalKinematicsBolt(self.temporary_fundamental_kinematics_path, save_intermediate_output=True)
+        self.derived_kinematics_generator = DerivedKinematicsBolt(self.temporary_derived_kinematics_path, save_intermediate_output=True)
         self.metrics_generator = MetricsBolt(self.algorithm_metrics_path, save_intermediate_output=True)
         self.aggregator_bolt = AggregatorBolt(self.final_output_path, save_intermediate_output=True)
         self.report_bolt = ReportBolt(self.report_path, save_intermediate_output=True)
         
         self._pipeline: List[CollectiveBodyBolt] = [
-            self.directory_parser, self.data_cleaner, self.kinematics_generator, 
+            self.directory_parser, self.data_cleaner, 
+            self.fundamental_kinematics_generator, self.derived_kinematics_generator,
             self.metrics_generator, self.aggregator_bolt, self.report_bolt
         ]
 
@@ -81,7 +84,8 @@ class CollectiveBodyDataPipeline:
         # Define directory structure
         self.input_file_info = self.final_output_directory / "input_info/"
         self.monolithic_database_path = self.final_output_directory / "monolithic_database/"
-        self.temporary_kinematics_path = self.final_output_directory / "tmp_kinematics_database/"
+        self.temporary_fundamental_kinematics_path = self.final_output_directory / "tmp_fundamental_kinematics_database/"
+        self.temporary_derived_kinematics_path = self.final_output_directory / "tmp_derived_kinematics_database/"
         self.algorithm_metrics_path = self.final_output_directory / "algorithm_database/"
         self.final_output_path = self.final_output_directory / "final_output/"
         self.report_path = self.final_output_directory / "reports/"
@@ -89,7 +93,8 @@ class CollectiveBodyDataPipeline:
         # Make directories if they don't exist
         self.final_output_path.mkdir(parents=True, exist_ok=True)
         self.monolithic_database_path.mkdir(parents=True, exist_ok=True)
-        self.temporary_kinematics_path.mkdir(parents=True, exist_ok=True)
+        self.temporary_fundamental_kinematics_path.mkdir(parents=True, exist_ok=True)
+        self.temporary_derived_kinematics_path.mkdir(parents=True, exist_ok=True)
         self.algorithm_metrics_path.mkdir(parents=True, exist_ok=True)
         self.final_output_path.mkdir(parents=True, exist_ok=True)
         self.report_path.mkdir(parents=True, exist_ok=True)
