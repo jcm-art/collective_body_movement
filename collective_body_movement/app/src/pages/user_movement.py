@@ -26,9 +26,6 @@ class MovementExplorerPage(StreamlitPage):
         self.state = state
         self.profiler = AppProfiler(True)
 
-        # Get platform to enable cloud vs. local loading
-        self.platform = platform.processor()
-
         # Include file uploader
         self.include_file_uploader = False
 
@@ -72,12 +69,13 @@ class MovementExplorerPage(StreamlitPage):
     def _create_data_manager(self):
         self.mdm = MovementDataManager()
 
-        if self.platform is not None:
+        if self._check_streamlit():
+            self.include_file_uploader = True
+        else:
             st.write("Local application, attempting file upload")
             data_filepath = "../data/new_pipeline/5_aggregated_output/CollectiveBodyBolt_output"
             self.mdm.load_local_movement_data_from_filepath(data_filepath)
-        else:
-            self.include_file_uploader = True
+
 
     def _make_expander(self):
         # Define an expander at the top to provide more information for the app
@@ -108,3 +106,23 @@ class MovementExplorerPage(StreamlitPage):
         # TODO - add option for all
         chapter_options = [1,2,3]
         self.user_chapter_selection_static = st.selectbox("Select a chapter?", chapter_options,index=0)
+
+    def _check_streamlit(self):
+        """
+        Function to check whether python code is run within streamlit
+
+        Returns
+        -------
+        use_streamlit : boolean
+            True if code is run within streamlit, else False
+        Source: https://discuss.streamlit.io/t/how-to-check-if-code-is-run-inside-streamlit-and-not-e-g-ipython/23439/2
+        """
+        try:
+            from streamlit.script_run_context import get_script_run_ctx
+            if not get_script_run_ctx():
+                use_streamlit = False
+            else:
+                use_streamlit = True
+        except ModuleNotFoundError:
+            use_streamlit = False
+        return use_streamlit
