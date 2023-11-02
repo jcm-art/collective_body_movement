@@ -157,6 +157,9 @@ class MetricsBolt(CollectiveBodyBolt):
         total_dist_metric = MetricCalculator("total_cartesian_distance")
         total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_cartesian_distance"])
 
+        total_dist_metric = MetricCalculator("total_rotational_distance")
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_rotational_distance"])
+
         # TODO - rework for autogeneration
         output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 

@@ -66,12 +66,12 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
     def _derived_kinematics(self, output_df: pd.DataFrame, output_metadata: Dict):
 
         output_df, output_metadata = self._cumulative_distance(output_df, output_metadata)
+        output_df, output_metadata = self._cumulative_rotational_distance(output_df, output_metadata)
         
         return output_df, output_metadata
     
 
     def _cumulative_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
-        num_entries = len(output_df.index)
         timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
     
         # Caculate displacement for every timestep
@@ -83,5 +83,24 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         
         # Calculate cumulative sum of displacement
         output_df['total_cartesian_distance'] = output_df['cartesian_displacement'].cumsum()
+
+        return output_df, output_metadata
+    
+    def _cumulative_rotational_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
+        timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
+    
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                rotational_displacement=lambda x: (
+                    ((x["head_vel_rot_i"]*timestep)**2 +  \
+                      (x["head_vel_rot_j"]*timestep)**2 +  \
+                        (x["head_vel_rot_k"]*timestep)**2 + \
+                           (x["head_vel_rot_l"]*timestep)**2 \
+                            )**0.5
+                )
+            )    
+        
+        # Calculate cumulative sum of displacement
+        output_df['total_rotational_distance'] = output_df['rotational_displacement'].cumsum()
 
         return output_df, output_metadata
