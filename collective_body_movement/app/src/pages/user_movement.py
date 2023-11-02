@@ -46,12 +46,8 @@ class MovementExplorerPage(StreamlitPage):
         # Make sidebar
         self._make_sidebar()
 
-        # Get uploaded files if necessary
-        if self.include_file_uploader:
-            st.write("Making file uploader")
-            self.mdm.load_movement_data_from_upload()
-        else:
-            st.write("NOT Making file uploader")
+        # Get uploaded files
+        self.mdm.load_movement_data_from_upload()
 
         # Request user metric parameters
         self._request_user_metric_parameters()
@@ -69,13 +65,12 @@ class MovementExplorerPage(StreamlitPage):
     def _create_data_manager(self):
         self.mdm = MovementDataManager()
 
-        if self._check_streamlit():
-            self.include_file_uploader = True
-        else:
-            st.write("Local application, attempting file upload")
+        # Attempt local file upload
+        try:
             data_filepath = "../data/new_pipeline/5_aggregated_output/CollectiveBodyBolt_output"
             self.mdm.load_local_movement_data_from_filepath(data_filepath)
-
+        except:
+            print("Local filepath unavailable")
 
     def _make_expander(self):
         # Define an expander at the top to provide more information for the app
