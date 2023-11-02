@@ -62,7 +62,7 @@ class MovementExplorerPage(StreamlitPage):
         self.mdm = MovementDataManager()
 
         if self.platform is not None:
-            data_filepath = "../data/new_pipeline/final_output/CollectiveBodyBolt_output"
+            data_filepath = "../data/new_pipeline/5_aggregated_output/CollectiveBodyBolt_output"
             self.mdm.load_local_movement_data_from_filepath(data_filepath)
         else:
             self.mdm.load_movement_data_from_upload()

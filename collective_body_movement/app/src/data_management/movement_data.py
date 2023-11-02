@@ -1,11 +1,10 @@
 
+import os
 
 import pandas as pd
+import pathlib
 
 import streamlit as st
-
-
-from collective_body_movement.ingest.directory_ingest import DirectoryParserBolt
 
 
 class MovementDataManager:
@@ -22,27 +21,26 @@ class MovementDataManager:
     
     def load_local_movement_data_from_filepath(_self, _movement_file_directory):
         
-        # User directory parsing bolt to find files
-        dpb = DirectoryParserBolt("~/tmp", False)
-
-        # Data input metadata
-        input_metadata = {
-            "input_metadata": {
-                "directory_root_path": _movement_file_directory,
-                "quick_debug_mode": False,
-                "file_ingest_limit": None,
-            }
-        }
-
-        _, filepath_metadata, _ = dpb.process(None, input_metadata, None)
-
-        print(filepath_metadata)
-
-        movement_file_list = filepath_metadata['input_metadata']['discovered_filepaths']
+        movement_file_list = _self._get_discovered_filepaths(_movement_file_directory)
 
         print(movement_file_list)
 
         _self._load_file_list(movement_file_list)
+
+    def _get_discovered_filepaths(self, directory_root: str):
+        input_path = pathlib.Path(directory_root)
+        filepaths_in_directory = self._get_data_paths(input_path, ".csv")
+
+        return filepaths_in_directory
+    
+    def _get_data_paths(self, filepath, filetype):
+        paths = []
+        for root, dirs, files in os.walk(filepath):
+            for file in files:
+                if file.lower().endswith(filetype.lower()):
+                    paths.append(str(pathlib.PurePath(root, file)))
+        
+        return paths
 
     def _load_file_list(self, df_file_path_list):
         for file in df_file_path_list:
