@@ -7,6 +7,10 @@ import pandas as pd
 
 from ..utils import CollectiveBodyBolt
 
+# TODO - move mass assumptions to constants file
+hand_arm_mass = 5.3
+human_mass = 80 - hand_arm_mass*2 # Based on average weight of human in KG
+
 class DerivedKinematicsBolt(CollectiveBodyBolt):
 
     def __init__(self, output_directory_path: str, save_intermediate_output: bool=False) -> None:
@@ -67,6 +71,7 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
 
         output_df, output_metadata = self._cumulative_distance(output_df, output_metadata)
         output_df, output_metadata = self._cumulative_rotational_distance(output_df, output_metadata)
+        output_df, output_metadata = self._linear_kinetic_energy(output_df, output_metadata)
         
         return output_df, output_metadata
     
@@ -104,3 +109,17 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         output_df['total_rotational_distance'] = output_df['rotational_displacement'].cumsum()
 
         return output_df, output_metadata
+    
+    def _linear_kinetic_energy(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                linear_kinetic_energy=lambda x: (
+                    x["head_vel_pos_magnitude"]**2 * 1/2 * human_mass +
+                    x["left_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass +
+                    x["right_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass
+                )
+            )  
+    
+        return output_df, output_metadata
+
+

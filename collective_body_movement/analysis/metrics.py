@@ -154,13 +154,17 @@ class MetricsBolt(CollectiveBodyBolt):
         
         # Calculate Metrics from algorithms
         # TODO - move to process all datasets
+        # TODO - rework for autogeneration
         total_dist_metric = MetricCalculator("total_cartesian_distance")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_cartesian_distance"])
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_cartesian_distance"])        
+        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
         total_dist_metric = MetricCalculator("total_rotational_distance")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_rotational_distance"])
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_rotational_distance"])        
+        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
-        # TODO - rework for autogeneration
+        total_dist_metric = MetricCalculator("linear_kinetic_energy")
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["linear_kinetic_energy"])
         output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
         return output_df, output_metadata
