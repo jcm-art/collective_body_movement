@@ -15,7 +15,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from ..utils import StreamlitPage, AppProfiler
-from collective_body_movement.datamanager import CollectiveBodyDataManager
+from ....datamanager import CollectiveBodyDataManager
 
 class MetricsAnalysisPage(StreamlitPage):
 
