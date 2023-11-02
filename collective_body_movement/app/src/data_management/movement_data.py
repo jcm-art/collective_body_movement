@@ -16,6 +16,7 @@ class MovementDataManager:
 
     def load_movement_data_from_upload(_self):
         # Get Uploaded files
+        print("Initiaing file uploader")
         movement_file_list = st.file_uploader("Upload raw data movement file", type=["csv"], accept_multiple_files=True)
         _self._load_file_list(movement_file_list)
     
