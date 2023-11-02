@@ -15,7 +15,7 @@ class CollectiveBodyBolt:
     def __init__(self, output_directory_path: str, save_intermediate_output: bool=False) -> None:
         # initialize dataframe and metadata for bolt
         self.output_df_list: List[pd.DataFrame] = []
-        self.aggregate_metadata = {}
+        self.aggregate_metadata_output = {}
         self.output_metadata_list: List[Dict] = []
 
         # Initialize output for bolt
@@ -39,7 +39,7 @@ class CollectiveBodyBolt:
         json_output = self.output_path/f"{__class__.__name__}_aggregate_metadata.json"
         with open(json_output,"w") as outfile:
             # TODO - validate that posix path and datetime aren't broken with forced default str output
-            json_object = json.dumps(self.aggregate_metadata, indent = 6, sort_keys=True, default=str) 
+            json_object = json.dumps(self.aggregate_metadata_output, indent = 6, sort_keys=True, default=str) 
             outfile.write(json_object)
 
         # Save dataset metadata
@@ -69,7 +69,7 @@ class CollectiveBodyBolt:
     @classmethod
     def clear_bolt(self):
         self.output_df_list: List[pd.DataFrame] = []
-        self.aggregate_metadata = {}
+        self.aggregate_metadata_output = {}
         self.output_metadata_list: List[Dict] = []
 
 

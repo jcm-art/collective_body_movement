@@ -42,13 +42,13 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
             output_metadata = output_metadata_list[i]
             output_dataset_id = list(output_metadata.keys())[0]
             output_metadata = output_metadata[output_dataset_id]
-            output_metadata["dervied_kinematics_metadata"] = {}
+            output_metadata["derived_kinematics_metadata"] = {}
 
             if output_metadata["cleaned_metadata"]["is_valid"]:
                 output_df, output_metadata = self._derived_kinematics(output_df, output_metadata)
 
             else: 
-                output_metadata["dervied_kinematics_metadata"] = {
+                output_metadata["derived_kinematics_metadata"] = {
                     "error_flag": "invalid dataset, kinematics pipeline not run"
                 }
 
@@ -61,8 +61,27 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
             # Update the metadata list entries
             output_df_list[i] = output_df
             output_metadata_list[i] = output_metadata
-        return output_df_list, output_metadata_list\
+        return output_df_list, output_metadata_list
 
     def _derived_kinematics(self, output_df: pd.DataFrame, output_metadata: Dict):
+
+        output_df, output_metadata = self._cumulative_distance(output_df, output_metadata)
         
+        return output_df, output_metadata
+    
+
+    def _cumulative_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
+        num_entries = len(output_df.index)
+        timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
+    
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                cartesian_displacement=lambda x: (
+                    ((x["head_vel_pos_x"]*timestep)**2 + (x["head_vel_pos_y"]*timestep)**2 + (x["head_vel_pos_z"]*timestep)**2)**0.5
+                )
+            )    
+        
+        # Calculate cumulative sum of displacement
+        output_df['total_cartesian_distance'] = output_df['cartesian_displacement'].cumsum()
+
         return output_df, output_metadata

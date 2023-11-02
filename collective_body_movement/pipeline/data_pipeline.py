@@ -19,10 +19,10 @@ from collective_body_movement.utils import CollectiveBodyBolt
 
 class CollectiveBodyDataPipeline:
 
-    def __init__(self, final_output_path: str) -> None:
+    def __init__(self, output_directory: str) -> None:
 
         # Set paths
-        self.final_output_directory = pathlib.Path(final_output_path)
+        self.final_output_directory = pathlib.Path(output_directory)
 
         # TODO - make saving intermediate steps optional
         self._initialize_filesystem()
@@ -30,11 +30,12 @@ class CollectiveBodyDataPipeline:
         # Initialize Preprocessing Flow 
         # TODO - add configuration, manage with pipeline instead of manual stages
         self.directory_parser = DirectoryParserBolt(self.input_file_info, save_intermediate_output=True)
-        self.data_cleaner = DataCleanerBolt(self.monolithic_database_path, save_intermediate_output=True)
+        self.data_cleaner = DataCleanerBolt(self.cleaned_data_path, save_intermediate_output=True)
         self.fundamental_kinematics_generator = FundamentalKinematicsBolt(self.temporary_fundamental_kinematics_path, save_intermediate_output=True)
         self.derived_kinematics_generator = DerivedKinematicsBolt(self.temporary_derived_kinematics_path, save_intermediate_output=True)
         self.metrics_generator = MetricsBolt(self.algorithm_metrics_path, save_intermediate_output=True)
-        self.aggregator_bolt = AggregatorBolt(self.final_output_path, save_intermediate_output=True)
+        self.aggregator_bolt = AggregatorBolt(self.aggregated_output_path, save_intermediate_output=True)
+        #self.normalized_bolt = AggregatorBolt(self.TBD, save_intermediate_output=True)
         self.report_bolt = ReportBolt(self.report_path, save_intermediate_output=True)
         
         self._pipeline: List[CollectiveBodyBolt] = [
@@ -82,21 +83,21 @@ class CollectiveBodyDataPipeline:
 
     def _initialize_filesystem(self):
         # Define directory structure
-        self.input_file_info = self.final_output_directory / "input_info/"
-        self.monolithic_database_path = self.final_output_directory / "monolithic_database/"
-        self.temporary_fundamental_kinematics_path = self.final_output_directory / "tmp_fundamental_kinematics_database/"
-        self.temporary_derived_kinematics_path = self.final_output_directory / "tmp_derived_kinematics_database/"
-        self.algorithm_metrics_path = self.final_output_directory / "algorithm_database/"
-        self.final_output_path = self.final_output_directory / "final_output/"
+        self.input_file_info = self.final_output_directory / "0_input_info/"
+        self.cleaned_data_path = self.final_output_directory / "1_cleaned_data/"
+        self.temporary_fundamental_kinematics_path = self.final_output_directory / "2_tmp_fundamental_kinematics_database/"
+        self.temporary_derived_kinematics_path = self.final_output_directory / "3_tmp_derived_kinematics_database/"
+        self.algorithm_metrics_path = self.final_output_directory / "4_algorithm_database/"
+        self.aggregated_output_path = self.final_output_directory / "5_aggregated_output/"
         self.report_path = self.final_output_directory / "reports/"
 
         # Make directories if they don't exist
-        self.final_output_path.mkdir(parents=True, exist_ok=True)
-        self.monolithic_database_path.mkdir(parents=True, exist_ok=True)
+        self.input_file_info.mkdir(parents=True, exist_ok=True)
+        self.cleaned_data_path.mkdir(parents=True, exist_ok=True)
         self.temporary_fundamental_kinematics_path.mkdir(parents=True, exist_ok=True)
         self.temporary_derived_kinematics_path.mkdir(parents=True, exist_ok=True)
         self.algorithm_metrics_path.mkdir(parents=True, exist_ok=True)
-        self.final_output_path.mkdir(parents=True, exist_ok=True)
+        self.aggregated_output_path.mkdir(parents=True, exist_ok=True)
         self.report_path.mkdir(parents=True, exist_ok=True)
 
     def _log_output(self, output):
@@ -124,7 +125,7 @@ if __name__=="__main__":
     # Initialize the pipeline
     # TODO - create options to specify path or use default locations specified in config file
     cbdp = CollectiveBodyDataPipeline(
-        final_output_path="data/new_pipeline/",
+        output_directory="data/new_pipeline/",
     )
 
     # Run the pipeline with provided arguments
@@ -140,5 +141,5 @@ if __name__=="__main__":
     # Temporary for debug
     #print("Final dataframe is: ")
     #print(output_df.describe())    
-    print("Final output metadata is:")
-    print(output_aggregated_metadata)
+    print("Pipeline execution complete")
+    #print(output_aggregated_metadata)
