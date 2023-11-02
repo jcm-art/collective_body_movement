@@ -5,6 +5,9 @@
 import json
 import platform
 import time
+import sys
+sys.path.append("../../../")
+
 from typing import Dict
 
 import numpy as np
@@ -15,7 +18,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from ..utils import StreamlitPage, AppProfiler
-from ....datamanager import CollectiveBodyDataManager
+from collective_body_movement.datamanager import CollectiveBodyDataManager
 
 class MetricsAnalysisPage(StreamlitPage):
 
