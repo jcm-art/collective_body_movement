@@ -133,8 +133,13 @@ if __name__=="__main__":
     raw_data_path="bin/data/DATA.2023.06.26/"
     cbdp._log_output(f"Running pipeline with {raw_data_path}")
 
-    input_df_list, input_aggregated_metadata, output_metadata = \
-        cbdp.initialize_input(raw_data_path=raw_data_path, file_ingest_limit=10, quick_debug=True)
+    if quick_run:
+        input_df_list, input_aggregated_metadata, output_metadata = \
+            cbdp.initialize_input(raw_data_path=raw_data_path, file_ingest_limit=10, quick_debug=True)
+    else:
+        input_df_list, input_aggregated_metadata, output_metadata = \
+            cbdp.initialize_input(raw_data_path=raw_data_path)
+
     output_df_list, output_aggregated_metadata, output_metadata_list = \
           cbdp.run_pipeline()
 
