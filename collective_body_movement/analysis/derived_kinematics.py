@@ -7,6 +7,15 @@ import pandas as pd
 
 from ..utils import CollectiveBodyBolt
 
+# TODO - move mass assumptions to constants file
+# Source: https://exrx.net/Kinesiology/Segments
+hand_mass = 0.575 / 2
+hand_arm_mass = 5.3 / 2
+arm_mass = hand_arm_mass - hand_mass
+human_mass = 73
+torso_legs_head_mass = human_mass - hand_arm_mass*2 # Based on average weight of human in KG
+body_radius = 0.1
+
 class DerivedKinematicsBolt(CollectiveBodyBolt):
 
     def __init__(self, output_directory_path: str, save_intermediate_output: bool=False) -> None:
@@ -66,12 +75,16 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
     def _derived_kinematics(self, output_df: pd.DataFrame, output_metadata: Dict):
 
         output_df, output_metadata = self._cumulative_distance(output_df, output_metadata)
+        output_df, output_metadata = self._cumulative_rotational_distance(output_df, output_metadata)
+        output_df, output_metadata = self._linear_kinetic_energy(output_df, output_metadata)
+        output_df, output_metadata = self._linear_power(output_df, output_metadata)
+        output_df, output_metadata = self._rotational_inertia(output_df, output_metadata)
+        output_df, output_metadata = self._rotational_kinetic_energy(output_df, output_metadata)
         
         return output_df, output_metadata
     
 
     def _cumulative_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
-        num_entries = len(output_df.index)
         timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
     
         # Caculate displacement for every timestep
@@ -84,4 +97,80 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         # Calculate cumulative sum of displacement
         output_df['total_cartesian_distance'] = output_df['cartesian_displacement'].cumsum()
 
+        return output_df, output_metadata
+    
+    def _cumulative_rotational_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
+        timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
+    
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                rotational_displacement=lambda x: (
+                    ((x["head_vel_rot_i"]*timestep)**2 +  \
+                      (x["head_vel_rot_j"]*timestep)**2 +  \
+                        (x["head_vel_rot_k"]*timestep)**2 + \
+                           (x["head_vel_rot_l"]*timestep)**2 \
+                            )**0.5
+                )
+            )    
+        
+        # Calculate cumulative sum of displacement
+        output_df['total_rotational_distance'] = output_df['rotational_displacement'].cumsum()
+
+        return output_df, output_metadata
+    
+    def _linear_kinetic_energy(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                linear_kinetic_energy=lambda x: (
+                    x["head_vel_pos_magnitude"]**2 * 1/2 * torso_legs_head_mass +
+                    x["left_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass +
+                    x["right_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass
+                )
+            )  
+    
+        return output_df, output_metadata
+    
+    def _linear_power(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                linear_power=lambda x: (
+                    x["head_accel_pos_magnitude"]* x["head_vel_pos_magnitude"] * torso_legs_head_mass +
+                    x["left_accel_pos_magnitude"]* x["left_vel_pos_magnitude"] * hand_arm_mass +
+                    x["right_accel_pos_magnitude"]* x["right_vel_pos_magnitude"] * hand_arm_mass
+                )
+            )  
+    
+        return output_df, output_metadata
+
+    def _rotational_inertia(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                rotational_inertia=lambda x: (
+                    1/2 * torso_legs_head_mass * body_radius**2 +
+                    1/3 * arm_mass * x["left_xzplanar_moment_arm_len"]**2 + 
+                    1/3 * arm_mass * x["right_xzplanar_moment_arm_len"]**2 + 
+                    1/1 * hand_mass * x["left_xzplanar_moment_arm_len"]**2 + 
+                    1/1 * hand_mass * x["right_xzplanar_moment_arm_len"]**2 
+                )
+            )  
+    
+        return output_df, output_metadata
+    
+    
+    def _rotational_kinetic_energy(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                rotational_kinetic_energy=lambda x: (
+                    x["head_vel_rot_magnitude"]**2 * 1/2 * 1/2 * torso_legs_head_mass * body_radius**2 +
+                    x["left_vel_rot_magnitude"]**2 * 1/2 * (
+                        hand_mass * x["left_xzplanar_moment_arm_len"]**2 + 1/3 * arm_mass * x["left_xzplanar_moment_arm_len"]**2
+
+                    ) +
+                    x["right_vel_rot_magnitude"]**2 * 1/2 * (
+                        hand_mass * x["right_xzplanar_moment_arm_len"]**2 + 1/3 * arm_mass * x["right_xzplanar_moment_arm_len"]**2
+
+                    )
+                )
+            )  
+    
         return output_df, output_metadata

@@ -137,7 +137,7 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
                     elif motion_type == "pos":
                         motion_axes = self.pos_axes
 
-                    magnitude_field = "_".join((magval, motion_type, "magnitude"))
+                    magnitude_field = "_".join((sensor_pos, magval, motion_type, "magnitude"))
                     fields = []
                     for axis in motion_axes:
                         fields.append("_".join((sensor_pos, magval,motion_type,axis)))
@@ -148,16 +148,19 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
     def _magnitude_lambda(self, output_df: pd.DataFrame, magnitude_field: str, fields: List[str]):
         if len(fields) == 3:
             output_df = output_df.assign(
-                magnitude_field=lambda x: (
+                magnitude_field_tmp=lambda x: (
                     (x[fields[0]]**2 + x[fields[1]]**2 + x[fields[2]]**2)**0.5
                 )
             )
         elif len(fields) == 4:
             output_df = output_df.assign(
-                magnitude_field=lambda x: (
+                magnitude_field_tmp=lambda x: (
                     (x[fields[0]]**2 + x[fields[1]]**2 + x[fields[2]]**2 + x[fields[3]]**2)**0.5
                 )
-            )        
+            ) 
+
+        # Rename temporary columns prior to returning
+        output_df.rename(columns={'magnitude_field_tmp':magnitude_field}, inplace=True)
         return output_df
 
     def _calculate_moment_arms(self, output_df: pd.DataFrame, output_metadata: Dict):
@@ -165,7 +168,17 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         return output_df, output_metadata
     
     def _calculate_xzplanar_moment_arm_mag(self, output_df: pd.DataFrame, output_metadata: Dict):
-        # TODO - implement moment arms
+        output_df = output_df.assign(
+                left_xzplanar_moment_arm_len=lambda x: (
+                    ((x["left_pos_x"]-x["head_pos_x"])**2 + (x["left_pos_z"]-x["head_pos_z"])**2)**0.5
+                )
+            )
+        
+        output_df = output_df.assign(
+                right_xzplanar_moment_arm_len=lambda x: (
+                    ((x["right_pos_x"]-x["head_pos_x"])**2 + (x["right_pos_z"]-x["head_pos_z"])**2)**0.5
+                )
+            )
         return output_df, output_metadata
 
 
