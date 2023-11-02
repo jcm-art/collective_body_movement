@@ -6,12 +6,14 @@ from typing import Dict, Type
 
 from .user_metrics import MetricsAnalysisPage
 from . metrics_summary import MetricsSummaryPage
+from .user_movement import MovementExplorerPage
 from ..utils import StreamlitPage
 
 
 CB_PAGE_MAP: Dict[str, Type[StreamlitPage]] = {
-    "User Metrics": MetricsAnalysisPage,
     "Metrics Summary": MetricsSummaryPage,
+    "User Movement Exploration": MovementExplorerPage,
+    "User Metrics": MetricsAnalysisPage,
 }
 
 __all__ = ["CB_PAGE_MAP"]

@@ -2,7 +2,9 @@
 # Director: Sarah Silverblatt-Buser (https://www.sarahsilverblatt.com/)
 # Author: Justin Martin (jcm-art)
 
+import json
 import platform
+import time
 from typing import Dict
 
 import numpy as np
@@ -12,7 +14,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-from ..utils import StreamlitPage
+from ..utils import StreamlitPage, AppProfiler
 from collective_body_movement.datamanager import CollectiveBodyDataManager
 
 class MetricsAnalysisPage(StreamlitPage):
@@ -20,21 +22,28 @@ class MetricsAnalysisPage(StreamlitPage):
     def __init__(self, state):
         print("Initializing MetricsAnalysisPage")
         self.state = state
+        self.profiler = AppProfiler(True)
 
         # Get platform to enable cloud vs. local loading
         self.platform = platform.processor()
 
         # Create data manager
+        self.profiler.start_timer()
         self._create_data_manager()
+        self.profiler.end_timer("Data manager creation")
 
         # Create color manager
+        self.profiler.start_timer()
         self.color_scale_manager = MetricsColorScaleManager()
+        self.profiler.end_timer("Color manager creation")
+
 
 
     def write(self):
         st.title("Collective Body Movement Analysis")
 
         # Make expander
+        self.profiler.start_timer()
         self._make_expander()
 
         # Make sidebar
@@ -42,8 +51,10 @@ class MetricsAnalysisPage(StreamlitPage):
 
         # Request user metric parameters
         self._request_user_metric_parameters()
+        self.profiler.end_timer("Sidebar, expander, user input creation")
 
         # Create UserMetricFrame
+        self.profiler.start_timer()
         self.user_metric_frame = UserMetricFrame(
             self.mdm.cbdm.get_frame_dataset_dict(
                 self.user_dataset_selection, 
@@ -55,18 +66,26 @@ class MetricsAnalysisPage(StreamlitPage):
             self.speed,
             self.user_chapter_selection_static, 
         )        
+        self.profiler.end_timer("User metric frame creation")
 
         # Write UserMetricFrame
+        self.profiler.start_timer()
         self.user_metric_frame.write()
+        self.profiler.end_timer("User metric frame write")
 
         # Write ColorScaleManager
         # TODO (jcm-art): Manage dataset ID outside of metrics manager
+        self.profiler.start_timer()
         self.color_scale_manager.update_color_manager(
             self.user_metric_frame.movement_df["dataset_id"].unique()[0],
             self.mdm.cbdm.get_chosen_metric(self.user_metric_selection),
             self.user_metric_selection)
         
         self.color_scale_manager.write()
+        self.profiler.end_timer("Color scale manager update and write")
+
+        self.profiler.write_timing()
+
 
     def _create_data_manager(self):
         self.mdm = UserMetricsDataManager()
