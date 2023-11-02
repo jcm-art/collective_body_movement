@@ -168,7 +168,17 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         return output_df, output_metadata
     
     def _calculate_xzplanar_moment_arm_mag(self, output_df: pd.DataFrame, output_metadata: Dict):
-        # TODO - implement moment arms
+        output_df = output_df.assign(
+                left_xzplanar_moment_arm_len=lambda x: (
+                    ((x["left_pos_x"]-x["head_pos_x"])**2 + (x["left_pos_z"]-x["head_pos_z"])**2)**0.5
+                )
+            )
+        
+        output_df = output_df.assign(
+                right_xzplanar_moment_arm_len=lambda x: (
+                    ((x["right_pos_x"]-x["head_pos_x"])**2 + (x["right_pos_z"]-x["head_pos_z"])**2)**0.5
+                )
+            )
         return output_df, output_metadata
 
 

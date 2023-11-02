@@ -167,6 +167,15 @@ class MetricsBolt(CollectiveBodyBolt):
         total_dist_metric.calculate_metrics(output_dataset_id, output_df["linear_kinetic_energy"])
         output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
+        total_dist_metric = MetricCalculator("linear_power")
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["linear_power"])
+        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
+
+
+        total_dist_metric = MetricCalculator("rotational_inertia")
+        total_dist_metric.calculate_metrics(output_dataset_id, output_df["rotational_inertia"])
+        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
+
         return output_df, output_metadata
 
     def _basic_data_metrics(
