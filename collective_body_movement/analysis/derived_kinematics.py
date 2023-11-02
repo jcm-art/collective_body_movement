@@ -79,6 +79,7 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         output_df, output_metadata = self._linear_kinetic_energy(output_df, output_metadata)
         output_df, output_metadata = self._linear_power(output_df, output_metadata)
         output_df, output_metadata = self._rotational_inertia(output_df, output_metadata)
+        output_df, output_metadata = self._rotational_kinetic_energy(output_df, output_metadata)
         
         return output_df, output_metadata
     
@@ -150,6 +151,25 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
                     1/3 * arm_mass * x["right_xzplanar_moment_arm_len"]**2 + 
                     1/1 * hand_mass * x["left_xzplanar_moment_arm_len"]**2 + 
                     1/1 * hand_mass * x["right_xzplanar_moment_arm_len"]**2 
+                )
+            )  
+    
+        return output_df, output_metadata
+    
+    
+    def _rotational_kinetic_energy(self, output_df: pd.DataFrame, output_metadata: Dict):
+        # Caculate displacement for every timestep
+        output_df = output_df.assign(
+                rotational_kinetic_energy=lambda x: (
+                    x["head_vel_rot_magnitude"]**2 * 1/2 * 1/2 * torso_legs_head_mass * body_radius**2 +
+                    x["left_vel_rot_magnitude"]**2 * 1/2 * (
+                        hand_mass * x["left_xzplanar_moment_arm_len"]**2 + 1/3 * arm_mass * x["left_xzplanar_moment_arm_len"]**2
+
+                    ) +
+                    x["right_vel_rot_magnitude"]**2 * 1/2 * (
+                        hand_mass * x["right_xzplanar_moment_arm_len"]**2 + 1/3 * arm_mass * x["right_xzplanar_moment_arm_len"]**2
+
+                    )
                 )
             )  
     

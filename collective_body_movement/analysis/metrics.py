@@ -155,26 +155,14 @@ class MetricsBolt(CollectiveBodyBolt):
         # Calculate Metrics from algorithms
         # TODO - move to process all datasets
         # TODO - rework for autogeneration
-        total_dist_metric = MetricCalculator("total_cartesian_distance")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_cartesian_distance"])        
-        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
+        algorithm_names = ["total_cartesian_distance","total_rotational_distance","linear_kinetic_energy","linear_power","rotational_inertia","rotational_kinetic_energy"]
+        
+        for algorithm in algorithm_names:
+            total_dist_metric = MetricCalculator(algorithm)
+            total_dist_metric.calculate_metrics(output_dataset_id, output_df[algorithm])        
+            output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
-        total_dist_metric = MetricCalculator("total_rotational_distance")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["total_rotational_distance"])        
-        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
-
-        total_dist_metric = MetricCalculator("linear_kinetic_energy")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["linear_kinetic_energy"])
-        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
-
-        total_dist_metric = MetricCalculator("linear_power")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["linear_power"])
-        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
-
-
-        total_dist_metric = MetricCalculator("rotational_inertia")
-        total_dist_metric.calculate_metrics(output_dataset_id, output_df["rotational_inertia"])
-        output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
+            # TODO - add a metrics by chapter function and separate out in metadata structure
 
         return output_df, output_metadata
 
