@@ -100,9 +100,6 @@ def run_streamlit_app():
         duration = 0
 
 
-    url = "https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv"
-    dataset = pd.read_csv(url)
-
     step_nums = [str(i) for i in range(0,len_x)]
 
     # make figure
