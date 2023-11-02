@@ -51,7 +51,10 @@ class MovementExplorerPage(StreamlitPage):
 
         # Get uploaded files if necessary
         if self.include_file_uploader:
+            st.write("Making file uploader")
             self.mdm.load_movement_data_from_upload()
+        else:
+            st.write("NOT Making file uploader")
 
         # Request user metric parameters
         self._request_user_metric_parameters()
