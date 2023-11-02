@@ -40,7 +40,7 @@ class MovementExplorerPage(StreamlitPage):
 
 
     def write(self):
-        st.title("Collective Body Movement Analysis")
+        st.title("Collective Body Movement Visualization")
 
         # Make expander
         self.profiler.start_timer()
