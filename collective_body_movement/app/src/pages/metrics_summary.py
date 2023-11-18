@@ -39,8 +39,8 @@ class MetricsSummaryPage(StreamlitPage):
         metrics_file = st.file_uploader("Upload metrics file", type=["json"])
         metrics_file = json.load(metrics_file)
         metrics_file = {
-            "all_metrics": metrics_file["all_metrics"],
-            "all_basic_data_metrics": metrics_file["all_basic_data_metrics"]
+            "all_metrics": metrics_file["normalized_algorithm_metrics"],
+            "all_basic_data_metrics": metrics_file["normalized_basic_metrics"]
         }
         # st.json(metrics_file)
         return metrics_file
