@@ -79,12 +79,21 @@ class MetricsSummaryPage(StreamlitPage):
     def _plot_selections(self, metrics, algorithm_selection, metric_selections, selected_metric_category):
         print(f"Updating plot with {metric_selections} for algorithm {algorithm_selection} from {selected_metric_category}")
 
-        data = []
+        hist_data = []
+        prob_data = []
         for metric in metric_selections:
+            # Build Histogram Data
             x = metrics[selected_metric_category][algorithm_selection][metric]
-            data.append(go.Histogram(x=x,name=metric))
+            hist_data.append(go.Histogram(x=x,name=metric))
 
-        layout = go.Layout(
+            # Build cummulative distribution chart
+            rank = np.arange(0,len(x))
+            # TODO (jcm-art): Remove after normalizer bolt implemented
+            normed_x = (np.sort(x)-np.min(x))/(np.max(x))
+            prob_data.append(go.Scatter(x=rank, y=normed_x, name=metric))
+
+        # Build layout and cummulative distribution layout
+        hist_layout = go.Layout(
                 title=f'Histogram of Metrics for {algorithm_selection} ',
                 barmode='overlay',
                 xaxis=dict(
@@ -95,8 +104,22 @@ class MetricsSummaryPage(StreamlitPage):
                 ),
             ) 
 
-        fig = go.Figure(data=data, layout=layout)
-        st.write(fig)
+        prob_layout = go.Layout(
+                title=f'Cummulative Probability Distribution of Metrics for {algorithm_selection} ',
+                barmode='overlay',
+                xaxis=dict(
+                    title='Rank in Dataset (ascending)'
+                ),
+                yaxis=dict(
+                    title=f"Score in Dataset {metric} Metric"
+                ),
+            ) 
+
+        hist_fig = go.Figure(data=hist_data, layout=hist_layout)
+        st.write(hist_fig)
+    
+        prob_fig = go.Figure(data=prob_data, layout=prob_layout)
+        st.write(prob_fig)
 
     def _plot_normalized_selections(self, metrics, algorithm_selection, metric_selections):
         
