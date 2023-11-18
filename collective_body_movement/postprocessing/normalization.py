@@ -72,7 +72,7 @@ class NormalizerBolt(CollectiveBodyBolt):
         return input_dataframe_list, aggregate_metadata, input_metadata_list
 
 
-     def _normalize_mettrics(
+    def _normalize_mettrics(
             self, 
         aggregate_metadata: Dict,
         input_metadata_list: List[Dict],

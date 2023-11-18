@@ -14,6 +14,7 @@ from collective_body_movement.analysis.fundamental_kinematics import Fundamental
 from collective_body_movement.analysis.derived_kinematics import DerivedKinematicsBolt
 from collective_body_movement.analysis.metrics import MetricsBolt
 from collective_body_movement.postprocessing.aggregation import AggregatorBolt
+from collective_body_movement.postprocessing.normalization import NormalizerBolt
 from collective_body_movement.postprocessing.reports import ReportBolt
 from collective_body_movement.utils import CollectiveBodyBolt
 
@@ -35,13 +36,13 @@ class CollectiveBodyDataPipeline:
         self.derived_kinematics_generator = DerivedKinematicsBolt(self.temporary_derived_kinematics_path, save_intermediate_output=True)
         self.metrics_generator = MetricsBolt(self.algorithm_metrics_path, save_intermediate_output=True)
         self.aggregator_bolt = AggregatorBolt(self.aggregated_output_path, save_intermediate_output=True)
-        #self.normalized_bolt = AggregatorBolt(self.TBD, save_intermediate_output=True)
+        self.normalized_bolt = NormalizerBolt(self.normalized_output_path, save_intermediate_output=True)
         self.report_bolt = ReportBolt(self.report_path, save_intermediate_output=True)
         
         self._pipeline: List[CollectiveBodyBolt] = [
             self.directory_parser, self.data_cleaner, 
             self.fundamental_kinematics_generator, self.derived_kinematics_generator,
-            self.metrics_generator, self.aggregator_bolt, self.report_bolt
+            self.metrics_generator, self.aggregator_bolt, self.normalized_bolt, self.report_bolt
         ]
 
 
@@ -89,6 +90,7 @@ class CollectiveBodyDataPipeline:
         self.temporary_derived_kinematics_path = self.final_output_directory / "3_tmp_derived_kinematics_database/"
         self.algorithm_metrics_path = self.final_output_directory / "4_algorithm_database/"
         self.aggregated_output_path = self.final_output_directory / "5_aggregated_output/"
+        self.normalized_output_path = self.final_output_directory / "6_normalized_output/"
         self.report_path = self.final_output_directory / "reports/"
 
         # Make directories if they don't exist
