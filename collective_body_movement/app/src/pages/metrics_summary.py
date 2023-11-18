@@ -26,13 +26,10 @@ class MetricsSummaryPage(StreamlitPage):
         st.header("Metrics Summary")
 
         metrics = self._get_metrics_file()
-        metric_type_selections, \
-            algorithm_selection, \
-                metric_selections = self._display_selections(metrics)
+        algorithm_selection, \
+            metric_selections = self._display_selections(metrics)
         
         self._plot_selections(metrics, algorithm_selection, metric_selections)
-        # TODO - fix bug with broken normalized histograms, normalize by global data
-        #self._plot_normalized_selections(metrics, algorithm_selection, metric_selections)
 
     def _get_metrics_file(self):
         metrics_file = st.file_uploader("Upload metrics file", type=["json"])
@@ -74,7 +71,7 @@ class MetricsSummaryPage(StreamlitPage):
             options=metric_options,
         )
 
-        return metric_type_selections, algorithm_selections, metric_selections
+        return algorithm_selections, metric_selections
     
     def _plot_selections(self, metrics, algorithm_selections, metric_selections):
         print(f"Updating plot with {metric_selections} for algorithm {algorithm_selections}")
@@ -83,15 +80,10 @@ class MetricsSummaryPage(StreamlitPage):
         prob_data = []
 
         for key in self.metrics_type_dict.values():
-
             for algorithm_selection in algorithm_selections:
-
                 if algorithm_selection in metrics[key]:
-                    
                     for metric in metric_selections:
-
                         if metric in metrics[key][algorithm_selection]:
-                            st.write(f"key: {key} algorithm: {algorithm_selection} metric: {metric}")
                             print("hello")
                             # Build Histogram Data
                             x = metrics[key][algorithm_selection][metric]
@@ -130,28 +122,3 @@ class MetricsSummaryPage(StreamlitPage):
     
         prob_fig = go.Figure(data=prob_data, layout=prob_layout)
         st.write(prob_fig)
-
-    def _plot_normalized_selections(self, metrics, algorithm_selection, metric_selections):
-        
-        data = []
-        for metric in metric_selections:
-            x = metrics[algorithm_selection][metric]
-            data.append(go.Histogram(x=x,histnorm='probability',name=metric))
-
-        layout = go.Layout(
-                title=f'Normalized Histogram of Metrics for {algorithm_selection} ',
-                barmode='overlay',
-                xaxis=dict(
-                title='Distribution'
-                ),
-                yaxis=dict(
-                    title='Bin Count for Metric'
-                ),
-            ) 
-
-        fig = go.Figure(data=data, layout=layout)
-        st.write(fig)
-
-
-        # fig = go.Figure(data=[go.Histogram(x=x, histnorm='probability')])
-
