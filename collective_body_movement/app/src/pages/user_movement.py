@@ -67,7 +67,7 @@ class MovementExplorerPage(StreamlitPage):
 
         # Attempt local file upload
         try:
-            data_filepath = "../data/new_pipeline/5_aggregated_output/CollectiveBodyBolt_output"
+            data_filepath = "../data/new_pipeline/6_normalized_output/CollectiveBodyBolt_output"
             self.mdm.load_local_movement_data_from_filepath(data_filepath)
         except:
             print("Local filepath unavailable")

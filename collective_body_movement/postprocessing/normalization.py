@@ -50,25 +50,40 @@ class NormalizerBolt(CollectiveBodyBolt):
         output_metadata_list = input_metadata_list
         prior_basic_metrics = ouput_aggregate_metadata["all_basic_data_metrics"]
 
-        # Get max and min values for norm
-        combined_maxes = [] 
-        combined_mins = [] 
+        min_max_dict = {
+            'x':{},
+            'y':{},
+            'z':{},
+        }
 
-        for sensor_location in ['head', 'left','right']:
-            for dim in ['x','y','z']:
-                combined_maxes = combined_maxes+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["max"]
-                combined_mins = combined_mins+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["min"]
+        for dim in min_max_dict.keys():
 
-        max_pos_value = np.max(combined_maxes)
-        min_pos_value = np.min(combined_mins)
-        denom_value = max_pos_value - min_pos_value if max_pos_value-min_pos_value > 1e-4 else 1
+            # Get max and min values for norm
+            combined_maxes = [] 
+            combined_mins = [] 
+
+            for sensor_location in ['head', 'left','right']:
+                    combined_maxes = combined_maxes+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["max"]
+                    combined_mins = combined_mins+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["min"]
+
+            min_max_dict[dim]['max'] = np.max(combined_maxes)
+            min_max_dict[dim]['min'] = np.min(combined_mins)
+            print(f"min {min_max_dict[dim]['min']} max {min_max_dict[dim]['max']} and size of combined = {len(combined_maxes)}")
+            min_max_dict[dim]['denom_value'] = min_max_dict[dim]['max'] - min_max_dict[dim]['min'] \
+                if min_max_dict[dim]['max']-min_max_dict[dim]['min'] > 1e-4 else 1
 
         # Normalize position data
-        for df in input_dataframe_list:
-            for sensor_location in ['head', 'left','right']:
-                for dim in ['x','y','z']:
-                    df[f"{sensor_location}_pos_{dim}"] = (df[f"{sensor_location}_pos_{dim}"] - min_pos_value)/(denom_value)
+        for i in range(len(input_dataframe_list)):
+            df = input_dataframe_list[i]
+            for dim in ['x','y','z']:
 
+                # Update sensors w/ normalized dimension
+                for sensor_location in ['head', 'left','right']:
+                    df[f"{sensor_location}_pos_{dim}"] = \
+                        (df[f"{sensor_location}_pos_{dim}"] - \
+                         min_max_dict[dim]['min'])/(min_max_dict[dim]['denom_value'])
+
+            input_dataframe_list[i] = df
 
 
         return input_dataframe_list, aggregate_metadata, input_metadata_list
