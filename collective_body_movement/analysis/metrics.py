@@ -146,7 +146,12 @@ class MetricsBolt(CollectiveBodyBolt):
         
         # Generate metrics for basic data
         # TODO - replace by aggregated metadata with column list to prevent variation and recalling
-        basic_columns = list(output_df.columns)
+        # TODO - remove hardcoded column names
+        algorithm_names = ["total_cartesian_distance","total_rotational_distance","linear_kinetic_energy","linear_power","rotational_inertia","rotational_kinetic_energy"]
+        algo_set = set(algorithm_names)
+        all_cols_set = set(output_df.columns)
+        basic_columns = list(all_cols_set-algo_set)
+
         output_metadata = self._basic_data_metrics(output_dataset_id, output_df, output_metadata, basic_columns)
 
         # Divide algorithms by chapter (if required)
@@ -155,7 +160,6 @@ class MetricsBolt(CollectiveBodyBolt):
         # Calculate Metrics from algorithms
         # TODO - move to process all datasets
         # TODO - rework for autogeneration
-        algorithm_names = ["total_cartesian_distance","total_rotational_distance","linear_kinetic_energy","linear_power","rotational_inertia","rotational_kinetic_energy"]
         
         for algorithm in algorithm_names:
             total_dist_metric = MetricCalculator(algorithm)
