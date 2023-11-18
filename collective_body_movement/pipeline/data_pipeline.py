@@ -33,7 +33,7 @@ class CollectiveBodyDataPipeline:
         self.directory_parser = DirectoryParserBolt(self.input_file_info, save_intermediate_output=True)
         self.data_cleaner = DataCleanerBolt(self.cleaned_data_path, save_intermediate_output=True)
         self.fundamental_kinematics_generator = FundamentalKinematicsBolt(
-            self.temporary_fundamental_kinematics_path, use_smoothing=True, save_intermediate_output=True)
+            self.temporary_fundamental_kinematics_path, use_clipping=True, save_intermediate_output=True)
         self.derived_kinematics_generator = DerivedKinematicsBolt(self.temporary_derived_kinematics_path, save_intermediate_output=True)
         self.metrics_generator = MetricsBolt(self.algorithm_metrics_path, save_intermediate_output=True)
         self.aggregator_bolt = AggregatorBolt(self.aggregated_output_path, save_intermediate_output=True)

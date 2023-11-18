@@ -11,10 +11,10 @@ from ..utils import CollectiveBodyBolt
 
 class FundamentalKinematicsBolt(CollectiveBodyBolt):
 
-    def __init__(self, output_directory_path: str, use_smoothing: bool=False, save_intermediate_output: bool=False) -> None:
+    def __init__(self, output_directory_path: str, use_clipping: bool=False, save_intermediate_output: bool=False) -> None:
         super().__init__(output_directory_path, save_intermediate_output)
 
-        self.use_smoothing = use_smoothing
+        self.use_clipping = use_clipping
         self.sensor_locations = ['head','left','right']
         self.motion_types = ['pos','rot']
         self.pos_axes = ['x','y','z']
@@ -128,7 +128,7 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
                     # TODO - add metadata to velocities using custom class to report stats
 
                     # Smooth derivatives if bolt configured for smoothing
-                    if self.use_smoothing:
+                    if self.use_clipping:
                         output_df = self._clip_derivatives(output_df, new_col_name)
 
 
