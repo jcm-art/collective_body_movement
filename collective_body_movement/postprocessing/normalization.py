@@ -3,6 +3,7 @@
 # Author: Justin Martin (jcm-art)
 
 from typing import Dict, List
+import numpy as np
 import pandas as pd
 from ..utils import CollectiveBodyBolt
 
@@ -22,20 +23,15 @@ class NormalizerBolt(CollectiveBodyBolt):
         self.aggregate_metadata_output = aggregate_metadata
         self.output_metadata_list = input_metadata_list
 
-        self.aggregate_metadata_output["final_aggregation_metadata"] = {}
-
-        self.aggregate_metadata_output, self.aggregate_metadata_output, self.output_metadata_list = self._purge_invalid_datasets(
-            self.output_df_list, self.aggregate_metadata_output, self.output_metadata_list)
+        self.aggregate_metadata_output["normalization_output"] = {}
 
 
-        self.aggregate_metadata_output, self.output_metadata_list = self._merge_metadata(
+        self.aggregate_metadata_output, self.output_metadata_list = self._normalize_metrics(
             self.aggregate_metadata_output, self.output_metadata_list)
         
-        self.aggregate_metadata_output, self.output_metadata_list = self._purge_metadata(
-            self.aggregate_metadata_output, self.output_metadata_list)
-
-        self.output_df_list, self.aggregate_metadata_output = self._purge_intermediate_columns(
-            self.output_df_list, self.aggregate_metadata_output)
+        self.output_df_list, self.aggregate_metadata_output, self.output_metadata_list = self._normalize_datasets(
+            self.output_df_list, self.aggregate_metadata_output, self.output_metadata_list)
+        
 
         if self.save_intermediate_output:
             self.save_output()
@@ -50,29 +46,35 @@ class NormalizerBolt(CollectiveBodyBolt):
         input_metadata_list: List[Dict]
      ) -> (List[pd.DataFrame], List[Dict]):
         
-        indexes_to_purge = []
-        dataset_ids_to_purge = []
+        ouput_aggregate_metadata = aggregate_metadata
+        output_metadata_list = input_metadata_list
+        prior_basic_metrics = ouput_aggregate_metadata["all_basic_data_metrics"]
 
-        for i in range(len(input_metadata_list)):
-            metadata = input_metadata_list[i]
-            dataset_id = list(metadata.keys())[0]
+        # Get max and min values for norm
+        combined_maxes = [] 
+        combined_mins = [] 
 
-            if metadata[dataset_id]["cleaned_metadata"]["is_valid"]==False:
-                dataset_ids_to_purge.append(dataset_id)
-                indexes_to_purge.append(i)
+        for sensor_location in ['head', 'left','right']:
+            for dim in ['x','y','z']:
+                combined_maxes = combined_maxes+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["max"]
+                combined_mins = combined_mins+prior_basic_metrics[f"{sensor_location}_pos_{dim}"]["min"]
 
-        indexes_to_purge.sort(reverse=True)
-        # Delete invalid datasets
-        for index in indexes_to_purge:
-            del input_dataframe_list[index]
-            del input_metadata_list[index]
+        max_pos_value = np.max(combined_maxes)
+        min_pos_value = np.min(combined_mins)
+        denom_value = max_pos_value - min_pos_value if max_pos_value-min_pos_value > 1e-4 else 1
 
-        aggregate_metadata["final_aggregation_metadata"]["purged_datasets"] = dataset_ids_to_purge
+        # Normalize position data
+        for df in input_dataframe_list:
+            for sensor_location in ['head', 'left','right']:
+                for dim in ['x','y','z']:
+                    df[f"{sensor_location}_pos_{dim}"] = (df[f"{sensor_location}_pos_{dim}"] - min_pos_value)/(denom_value)
+
+
 
         return input_dataframe_list, aggregate_metadata, input_metadata_list
 
 
-    def _normalize_mettrics(
+    def _normalize_metrics(
             self, 
         aggregate_metadata: Dict,
         input_metadata_list: List[Dict],
@@ -81,31 +83,60 @@ class NormalizerBolt(CollectiveBodyBolt):
         ouput_aggregate_metadata = aggregate_metadata
         output_metadata_list = input_metadata_list
 
-        ouput_aggregate_metadata["all_metrics"] = {}
+        # Get un-normalized metrics
+        prior_basic_metrics = ouput_aggregate_metadata["all_basic_data_metrics"]
+        prior_algorithm_metrics = ouput_aggregate_metadata["all_metrics"]
 
-        for i in range(len(output_metadata_list)):
-            metadata = output_metadata_list[i]
-            dataset_id = list(metadata.keys())[0]
+        ouput_aggregate_metadata["normalized_basic_metrics"] = {}
+        ouput_aggregate_metadata["normalized_algorithm_metrics"] = {}
 
-            metrics_metadata = metadata[dataset_id]["metrics"]
+        # Normalize basic metrics
+        for algorithm_type in prior_basic_metrics.keys():
 
-            for algorithm_key in metrics_metadata.keys():
-                # Create dictionary for algorithm if not available
-                if algorithm_key not in ouput_aggregate_metadata["all_metrics"]:
-                    ouput_aggregate_metadata["all_metrics"][algorithm_key]={}
+            norm_metric_dict = {}
 
-                for metric_type in metrics_metadata[algorithm_key].keys():
-                    # Check if metric type already in aggregate data
-                    if metric_type not in ouput_aggregate_metadata["all_metrics"][algorithm_key]:
-                        ouput_aggregate_metadata["all_metrics"][algorithm_key][metric_type] = []
-                    
-                    # Append metric to aggregate data
-                    ouput_aggregate_metadata["all_metrics"][algorithm_key][metric_type]+= \
-                        metrics_metadata[algorithm_key][metric_type]
+            for metric_type in prior_basic_metrics[algorithm_type].keys():
 
-                    # Todo - if appending more than 
+                metric_arr = np.array(prior_basic_metrics[algorithm_type][metric_type])
 
+                # Normalize each metric list                               
+                if metric_type !="dataset_id": # Skip normalizing dataset ids 
+                    # Get values for normalization
+                    min_val = np.min(metric_arr)
+                    max_val = np.max(metric_arr)
+                    norm_denom = max_val - min_val if max_val - min_val > 1e-4 else 1
 
+                    # Normalize and store new metric
+                    metric_arr = (metric_arr - min_val)/norm_denom
 
+                norm_metric_dict[metric_type] = metric_arr.tolist()
+
+            ouput_aggregate_metadata["normalized_basic_metrics"][algorithm_type] = norm_metric_dict
+
+        # Normalize algorithm metrics
+        for algorithm_type in prior_algorithm_metrics.keys():
+
+            norm_metric_dict = {}
+
+            for metric_type in prior_algorithm_metrics[algorithm_type].keys():
+
+                metric_list = prior_algorithm_metrics[algorithm_type][metric_type]
+                metric_arr = np.array(metric_list)
+                
+                # Normalize each metric list                               
+                if metric_type !="dataset_id": # Skip normalizing dataset ids 
+                    # Get values for normalization
+                    min_val = np.min(metric_arr)
+                    max_val = np.max(metric_arr)
+                    norm_denom = max_val - min_val if max_val - min_val > 1e-4 else 1
+
+                    # Normalize and store new metric
+                    metric_arr = (metric_arr - min_val)/norm_denom
+
+                #print(f"keys: {algorithm_type}, {metric_type}, \n\n {metric_arr}")
+                norm_metric_dict[metric_type] = metric_arr.tolist()
+                #print(f"exception due to arr issue: {ouput_aggregate_metadata['normalized_algorithm_metrics']}")
+
+            ouput_aggregate_metadata["normalized_algorithm_metrics"][algorithm_type] = norm_metric_dict
 
         return ouput_aggregate_metadata, output_metadata_list
