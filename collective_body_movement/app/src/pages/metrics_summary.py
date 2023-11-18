@@ -8,7 +8,9 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
+from ..data_management.color import ColorManipulator
 from ..utils import StreamlitPage
+
 
 class MetricsSummaryPage(StreamlitPage):
 
@@ -19,6 +21,8 @@ class MetricsSummaryPage(StreamlitPage):
             "Basic": "all_basic_data_metrics", 
             "Algorithms": "all_metrics",
         }
+
+        self.color_manipulator = ColorManipulator()
 
     def write(self):
         st.title("Collective Body Metrics Summary")
@@ -47,6 +51,7 @@ class MetricsSummaryPage(StreamlitPage):
         metric_type_selections = st.multiselect(
             label="Explore Basic Metrics or Algorithms?",
             options=metric_type_options,
+            default=metric_type_options[1]
         )
 
         # TODO - select and compare multiple algorithms
@@ -58,6 +63,8 @@ class MetricsSummaryPage(StreamlitPage):
         algorithm_selections = st.multiselect(
             label="Select algorithms",
             options=algorithm_options,
+            default=algorithm_options[0]
+            
         )
 
         metric_options = []
@@ -69,7 +76,12 @@ class MetricsSummaryPage(StreamlitPage):
         metric_selections = st.multiselect(
             label="Select what metrics to explore.",
             options=metric_options,
+            default=metric_options[0]
         )
+
+        self.first_color = st.color_picker('Pick the first Color', '#8C00F9')
+        self.second_color = st.color_picker('Pick the second Color', '#FFCE00')
+
 
         return algorithm_selections, metric_selections
     
@@ -87,12 +99,40 @@ class MetricsSummaryPage(StreamlitPage):
                             print("hello")
                             # Build Histogram Data
                             x = metrics[key][algorithm_selection][metric]
-                            hist_data.append(go.Histogram(x=x,name=f"{metric}_{algorithm_selection}"))
 
                             # Build cummulative distribution chart
                             rank = np.arange(0,len(x))
                             x = np.sort(x)
-                            prob_data.append(go.Scatter(x=rank, y=x, name=metric))
+
+                            # Get colors for cummulative dist chart
+                            
+                            colors = self.color_manipulator.get_color_array(self.first_color, self.second_color, x)
+                            
+                            tmp_hist = go.Histogram(
+                                x=x,name=f"{metric}_{algorithm_selection}"
+                            )
+
+                            #num_bins = tmp_hist.xaxis 
+                            #st.write(f"xaxis is {num_bins}")
+                            # TODO (jcm-art): Fix histogram colors
+                            hist_colors = np.arange(0.0,1.1,0.1)
+                            marker={
+                                    'color': hist_colors,
+                                    'cmin': 0.0,
+                                    'cmax': 1.0,
+                                    'colorscale': [[0, self.first_color], [1, self.second_color]]
+                                }
+                            #tmp_hist.marker = marker
+                            hist_data.append(tmp_hist)
+
+                            prob_data.append(
+                                go.Scatter(
+                                    x=rank, y=x, name=metric,
+                                    mode="markers", marker={
+                                        "color": colors, 
+                                        "size":5
+                                    }
+                                ))
 
         # Build layout and cummulative distribution layout
         hist_layout = go.Layout(
