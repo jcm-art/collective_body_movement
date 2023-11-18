@@ -3,15 +3,18 @@
 # Author: Justin Martin (jcm-art)
 
 from typing import Dict, List
+
+import numpy as np
 import pandas as pd
 
 from ..utils import CollectiveBodyBolt
 
 class FundamentalKinematicsBolt(CollectiveBodyBolt):
 
-    def __init__(self, output_directory_path: str, save_intermediate_output: bool=False) -> None:
+    def __init__(self, output_directory_path: str, use_smoothing: bool=False, save_intermediate_output: bool=False) -> None:
         super().__init__(output_directory_path, save_intermediate_output)
 
+        self.use_smoothing = use_smoothing
         self.sensor_locations = ['head','left','right']
         self.motion_types = ['pos','rot']
         self.pos_axes = ['x','y','z']
@@ -120,8 +123,14 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
                     base_col_name = "_".join((sensor_pos, base_str+motion_type, motion_axis))
                     new_col_name = "_".join((sensor_pos, new_str+motion_type, motion_axis))
                     output_df = self._derivative(output_df, base_col_name, new_col_name, timestep)
+
                     output_df[new_col_name].fillna(0, inplace=True)
                     # TODO - add metadata to velocities using custom class to report stats
+
+                    # Smooth derivatives if bolt configured for smoothing
+                    if self.use_smoothing:
+                        output_df = self._clip_derivatives(output_df, new_col_name)
+
 
         return output_df, output_metadata
 
@@ -192,3 +201,24 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         df[new_column_name] = df[old_column_name].diff() / timestep
 
         return df
+
+    def _clip_derivatives(
+            self,
+            output_df: pd.DataFrame, 
+            new_col_name:str):
+        
+        # Get data and max/min
+        # TODO (jcm-art): replace with more efficient implementation
+        data = output_df[new_col_name].to_numpy()
+        data.sort()
+        percentile_to_clip = 0.9
+        upper_bound_index = int(len(data)*percentile_to_clip)
+        upper_bound_val = data[upper_bound_index]
+
+        # Clip upper bound
+        output_df[new_col_name] = output_df[new_col_name].apply(
+            lambda x: upper_bound_val if x > upper_bound_val else x)
+        
+        return output_df
+
+        
