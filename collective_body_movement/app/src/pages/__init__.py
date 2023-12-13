@@ -6,7 +6,7 @@ from typing import Dict, Type
 
 from .metrics_summary import MetricsSummaryPage
 from .user_movement import MovementExplorerPage
-from .metric_time_series import MovementExplorerPage
+from .metric_time_series import MetricSeriesPage
 from ..utils import StreamlitPage
 
 
