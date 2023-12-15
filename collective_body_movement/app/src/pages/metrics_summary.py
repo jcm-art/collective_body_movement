@@ -127,7 +127,7 @@ class MetricsSummaryPage(StreamlitPage):
 
                             prob_data.append(
                                 go.Scatter(
-                                    x=rank, y=x, name=metric,
+                                    x=rank, y=x, name=f"{metric}_{algorithm_selection}",
                                     mode="markers", marker={
                                         "color": colors, 
                                         "size":5

@@ -10,6 +10,7 @@ import pandas as pd
 
 from collective_body_movement.ingest.directory_ingest import DirectoryParserBolt
 from collective_body_movement.preprocessing.cleaner import DataCleanerBolt
+from collective_body_movement.preprocessing.timeaverager import TimeAverageBolt
 from collective_body_movement.analysis.fundamental_kinematics import FundamentalKinematicsBolt
 from collective_body_movement.analysis.derived_kinematics import DerivedKinematicsBolt
 from collective_body_movement.analysis.metrics import MetricsBolt
@@ -32,6 +33,7 @@ class CollectiveBodyDataPipeline:
         # TODO - add configuration, manage with pipeline instead of manual stages
         self.directory_parser = DirectoryParserBolt(self.input_file_info, save_intermediate_output=True)
         self.data_cleaner = DataCleanerBolt(self.cleaned_data_path, save_intermediate_output=True)
+        self.data_filter = TimeAverageBolt(self.filtered_data_path, save_intermediate_output=True, window_size=4)
         self.fundamental_kinematics_generator = FundamentalKinematicsBolt(
             self.temporary_fundamental_kinematics_path, use_clipping=True, save_intermediate_output=True)
         self.derived_kinematics_generator = DerivedKinematicsBolt(self.temporary_derived_kinematics_path, save_intermediate_output=True)
@@ -41,7 +43,7 @@ class CollectiveBodyDataPipeline:
         self.report_bolt = ReportBolt(self.report_path, save_intermediate_output=True)
         
         self._pipeline: List[CollectiveBodyBolt] = [
-            self.directory_parser, self.data_cleaner, 
+            self.directory_parser, self.data_cleaner, self.data_filter,
             self.fundamental_kinematics_generator, self.derived_kinematics_generator,
             self.metrics_generator, self.aggregator_bolt, self.normalized_bolt, self.report_bolt
         ]
@@ -77,6 +79,7 @@ class CollectiveBodyDataPipeline:
 
         # Data ingest and cleaning stage
         for pipeline_stage in self._pipeline:
+            print(f"Beginning pipeline stage {pipeline_stage.__class__.__name__}")
             output_df_list, output_aggregate_metadata, output_metadata_list = \
                 pipeline_stage.process(output_df_list, output_aggregate_metadata, output_metadata_list)
 
@@ -87,11 +90,12 @@ class CollectiveBodyDataPipeline:
         # Define directory structure
         self.input_file_info = self.final_output_directory / "0_input_info/"
         self.cleaned_data_path = self.final_output_directory / "1_cleaned_data/"
-        self.temporary_fundamental_kinematics_path = self.final_output_directory / "2_tmp_fundamental_kinematics_database/"
-        self.temporary_derived_kinematics_path = self.final_output_directory / "3_tmp_derived_kinematics_database/"
-        self.algorithm_metrics_path = self.final_output_directory / "4_algorithm_database/"
-        self.aggregated_output_path = self.final_output_directory / "5_aggregated_output/"
-        self.normalized_output_path = self.final_output_directory / "6_normalized_output/"
+        self.filtered_data_path = self.final_output_directory / "2_filtered_data/"
+        self.temporary_fundamental_kinematics_path = self.final_output_directory / "3_tmp_fundamental_kinematics_database/"
+        self.temporary_derived_kinematics_path = self.final_output_directory / "4_tmp_derived_kinematics_database/"
+        self.algorithm_metrics_path = self.final_output_directory / "5_algorithm_database/"
+        self.aggregated_output_path = self.final_output_directory / "6_aggregated_output/"
+        self.normalized_output_path = self.final_output_directory / "7_normalized_output/"
         self.report_path = self.final_output_directory / "reports/"
 
         # Make directories if they don't exist

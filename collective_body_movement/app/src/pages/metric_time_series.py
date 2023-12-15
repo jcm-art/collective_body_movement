@@ -5,7 +5,7 @@
 import json
 import platform
 import time
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -19,10 +19,10 @@ from ..data_management.movement_data import MovementDataManager
 from ..data_management.movement_frame import UserMetricFrame
 
 
-class MovementExplorerPage(StreamlitPage):
+class MetricSeriesPage(StreamlitPage):
 
     def __init__(self, state):
-        print("Initializing MovementExplorerPage")
+        print("Initializing MetricSeriesPage")
         self.state = state
         self.profiler = AppProfiler(True)
 
@@ -31,10 +31,8 @@ class MovementExplorerPage(StreamlitPage):
         self._create_data_manager()
         self.profiler.end_timer("Data manager creation")
 
-
-
     def write(self):
-        st.title("Collective Body Movement Visualization")
+        st.title("Collective Body Metric Time Series")
 
         # Make expander
         self.profiler.start_timer()
@@ -51,12 +49,47 @@ class MovementExplorerPage(StreamlitPage):
         self.profiler.end_timer("Sidebar, expander, user input creation")
 
         # Get movement dataframe for metrics
-        movement_df = self.mdm.get_updated_dataframe(self.user_dataset_selection, self.user_chapter_selection_static)
+        self.movement_df = self.mdm.get_updated_dataframe(self.user_dataset_selection, self.user_chapter_selection_static)
+        self.available_columns = self.movement_df.columns
         print(f"Grabbed a new data frame with {self.user_dataset_selection}, {self.user_chapter_selection_static}")
 
-        # Make Movement frame
-        movement_frame = UserMetricFrame(movement_df, self.speed)
-        movement_frame.write()
+        # Make Metric Time Series 
+        self.display_selected_columns = st.multiselect(
+            label="Select what metrics to explore.",
+            options=self.available_columns,
+            default=self.available_columns[0]
+        )
+
+        self._plot_time_series(self.display_selected_columns)
+
+
+    def _plot_time_series(self, time_series_values: List[str]):
+
+        for column in time_series_values:
+            time_series_data = []
+
+            tmp_scatter = go.Scatter(
+                x=self.movement_df['timestamp'], y=self.movement_df[column],name=f"{column}"
+            )
+
+            time_series_data.append(tmp_scatter)
+
+            time_series_layout = go.Layout(
+                title=f'Time Series plot for for {column} ',
+                barmode='overlay',
+                xaxis=dict(
+                    title='timestamp'
+                ),
+                yaxis=dict(
+                    title=f"Dataset {column} Column"
+                ),
+            )
+
+            time_series_fig = go.Figure(data=time_series_data, layout = time_series_layout)
+            
+            # Plot time series
+            st.write(time_series_fig)
+
 
 
     def _create_data_manager(self):
@@ -74,7 +107,6 @@ class MovementExplorerPage(StreamlitPage):
         with st.expander("About this app"):
             st.write('This app allows the user to view and analyze movement logs from actors in the Collective Body work. For more information, visit https://www.sarahsilverblatt.com/about')
 
-
     def _make_sidebar(self):
         st.sidebar.header("Input")
         self.speed = st.sidebar.selectbox("Speed", options=["Slow", "Normal", "Fast"], index=1)
@@ -84,9 +116,10 @@ class MovementExplorerPage(StreamlitPage):
         st.header("Select a Dataset and Participant ID")
         dataset_options = self.mdm.get_dataset_IDs()
         # TODO (jcm-art): update options for participant ID based on dataset selection
-        self.user_dataset_selection = st.selectbox(
+        self.user_dataset_selection = st.multiselect(
             label="Select a dataset ID",
             options=dataset_options,
+            default=dataset_options[0]
         )
 
         #headset_options = self.mdm.get_actor_IDs(self.user_dataset_selection)
@@ -98,23 +131,3 @@ class MovementExplorerPage(StreamlitPage):
         # TODO - add option for all
         chapter_options = [1,2,3]
         self.user_chapter_selection_static = st.selectbox("Select a chapter?", chapter_options,index=0)
-
-    def _check_streamlit(self):
-        """
-        Function to check whether python code is run within streamlit
-
-        Returns
-        -------
-        use_streamlit : boolean
-            True if code is run within streamlit, else False
-        Source: https://discuss.streamlit.io/t/how-to-check-if-code-is-run-inside-streamlit-and-not-e-g-ipython/23439/2
-        """
-        try:
-            from streamlit.script_run_context import get_script_run_ctx
-            if not get_script_run_ctx():
-                use_streamlit = False
-            else:
-                use_streamlit = True
-        except ModuleNotFoundError:
-            use_streamlit = False
-        return use_streamlit

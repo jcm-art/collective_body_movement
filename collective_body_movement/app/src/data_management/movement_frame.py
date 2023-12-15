@@ -69,8 +69,8 @@ class UserMetricFrame:
         self.fig = go.Figure(self.fig_dict)
 
     def _make_layout(self):
-        axismin = -1.5
-        axismax = 1.5
+        axismin = -0.1
+        axismax = 1.1
         window_dimension = 800
         # fill in most of layout
         self.fig_dict["layout"]["xaxis"] = {
