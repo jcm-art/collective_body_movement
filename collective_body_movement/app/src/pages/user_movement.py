@@ -22,12 +22,9 @@ from ..data_management.movement_frame import UserMetricFrame
 class MovementExplorerPage(StreamlitPage):
 
     def __init__(self, state):
-        print("Initializing MetricsAnalysisPage")
+        print("Initializing MovementExplorerPage")
         self.state = state
         self.profiler = AppProfiler(True)
-
-        # Include file uploader
-        self.include_file_uploader = False
 
         # Create data manager
         self.profiler.start_timer()
@@ -84,7 +81,7 @@ class MovementExplorerPage(StreamlitPage):
 
 
     def _request_user_metric_parameters(self):
-        st.header("Select a Dataset and Paricipant ID")
+        st.header("Select a Dataset and Participant ID")
         dataset_options = self.mdm.get_dataset_IDs()
         # TODO (jcm-art): update options for participant ID based on dataset selection
         self.user_dataset_selection = st.selectbox(
