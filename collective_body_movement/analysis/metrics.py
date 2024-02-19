@@ -2,11 +2,14 @@
 # Director: Sarah Silverblatt-Buser (https://www.sarahsilverblatt.com/)
 # Author: Justin Martin (jcm-art)
 
+import copy
 from typing import Dict, List
 import numpy as np
 import pandas as pd
 from ..utils import CollectiveBodyBolt
 
+START_CHAPTER = 1 
+END_CHAPTER = 3
 
 # TODO - make generic class with inheritance
 class MetricCalculator:
@@ -40,6 +43,12 @@ class MetricCalculator:
             'std': [],
         }
 
+        self.filtered_by_chapter_metric_dict = {
+            1: copy.deepcopy(self.metric_dict),
+            2: copy.deepcopy(self.metric_dict),
+            3: copy.deepcopy(self.metric_dict),
+        }
+
         self.meta_metric_dict = {
             'mean': None,
             'max': None,
@@ -61,6 +70,31 @@ class MetricCalculator:
             self.metric_dict[command].append(metric_result)
         return self.metric_dict
 
+    def calculate_chapter_metrics(
+            self,
+            dataset_id: int,
+            input_df: pd.DataFrame,
+            command_list: List[str] = [
+                'mean','max','min','sum','std']
+    ):
+        # Iterate through metrics by chapter to calculate filtered metrics
+        for chapter in self.filtered_by_chapter_metric_dict.keys():
+            # Filter data frame by chaper
+            chapter_df = input_df[input_df["chapitre"]==chapter]
+            chapter_df = chapter_df[self.algorithm_name]
+
+            # If cummulative metric, filter dataframe by prior chapter max
+            if chapter >1 and self.algorithm_name.startswith("total_"):
+                prior_chapter_max = input_df[input_df["chapitre"]==chapter-1][self.algorithm_name].max()
+                chapter_df = chapter_df-prior_chapter_max
+                
+            # Calculate metrics filtered by chaper
+            self.filtered_by_chapter_metric_dict[chapter]['dataset_id'].append(dataset_id)
+            for command in command_list:
+                metric_result = self.jump_dict_pd[command](chapter_df)
+                self.filtered_by_chapter_metric_dict[chapter][command].append(metric_result)
+        return self.filtered_by_chapter_metric_dict
+
     def calculate_meta_metrics(
             self,
             np_array: np.array,
@@ -71,9 +105,12 @@ class MetricCalculator:
             metric_result = self.jump_dict_np[command](np_array)
             self.meta_metric_dict[command]=metric_result
         return self.meta_metric_dict
-
+    
     def get_metric_dict(self):
         return self.metric_dict
+    
+    def get_chapter_metric_dict(self, chapter_num: int):
+        return self.filtered_by_chapter_metric_dict[chapter_num]
     
     def get_meta_metric_dict(self):
         return self.meta_metric_dict
@@ -154,9 +191,6 @@ class MetricsBolt(CollectiveBodyBolt):
 
         output_metadata = self._basic_data_metrics(output_dataset_id, output_df, output_metadata, basic_columns)
 
-        # Divide algorithms by chapter (if required)
-        output_df, output_metadata = self._divide_algorithm_by_chapter(output_df, output_metadata, "total_cartesian_distance")
-        
         # Calculate Metrics from algorithms
         # TODO - move to process all datasets
         # TODO - rework for autogeneration
@@ -166,7 +200,11 @@ class MetricsBolt(CollectiveBodyBolt):
             total_dist_metric.calculate_metrics(output_dataset_id, output_df[algorithm])        
             output_metadata["metrics"][total_dist_metric.get_algorithm_name()] = total_dist_metric.get_metric_dict()
 
+            total_dist_metric.calculate_chapter_metrics(output_dataset_id, output_df[["chapitre", total_dist_metric.get_algorithm_name()]])
+
             # TODO - add a metrics by chapter function and separate out in metadata structure
+            for i in range(START_CHAPTER, END_CHAPTER+1):
+                output_metadata["metrics"][total_dist_metric.get_algorithm_name()+"_chapter_"+str(i)] = total_dist_metric.get_chapter_metric_dict(i)
 
         return output_df, output_metadata
 
