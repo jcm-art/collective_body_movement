@@ -3,6 +3,7 @@
 # Author: Justin Martin (jcm-art)
 
 from typing import Dict, List
+import numpy as np
 import pandas as pd
 
 from ..utils import CollectiveBodyBolt
@@ -88,11 +89,11 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
     
         # Caculate displacement for every timestep
-        output_df = output_df.assign(
-                cartesian_displacement=lambda x: (
-                    ((x["head_vel_pos_x"]*timestep)**2 + (x["head_vel_pos_y"]*timestep)**2 + (x["head_vel_pos_z"]*timestep)**2)**0.5
-                )
-            )    
+        output_df['cartesian_displacement'] = np.sqrt(
+            output_df['head_pos_x'].diff()**2 + output_df['head_pos_y'].diff()**2 + output_df['head_pos_z'].diff()**2
+        )
+        output_df['cartesian_displacement'].iloc[0] = 0  # Set distance traveled at first row as 0
+   
         
         # Calculate cumulative sum of displacement
         output_df['total_cartesian_distance'] = output_df['cartesian_displacement'].cumsum()
@@ -101,44 +102,38 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
     
     def _cumulative_rotational_distance(self, output_df: pd.DataFrame, output_metadata: Dict):
         timestep = output_metadata["fundamental_kinematics_metadata"]["avg_timestep"]
-    
+
         # Caculate displacement for every timestep
-        output_df = output_df.assign(
-                rotational_displacement=lambda x: (
-                    ((x["head_vel_rot_i"]*timestep)**2 +  \
-                      (x["head_vel_rot_j"]*timestep)**2 +  \
-                        (x["head_vel_rot_k"]*timestep)**2 + \
-                           (x["head_vel_rot_l"]*timestep)**2 \
-                            )**0.5
-                )
-            )    
+        output_df['rotational_displacement'] = np.sqrt(
+            output_df['head_rot_i'].diff()**2 + output_df['head_rot_j'].diff()**2 + output_df['head_rot_k'].diff()**2 + output_df['head_rot_l'].diff()**2
+        )
+        output_df['rotational_displacement'].iloc[0] = 0  # Set distance traveled at first row as 0
+   
         
         # Calculate cumulative sum of displacement
         output_df['total_rotational_distance'] = output_df['rotational_displacement'].cumsum()
+        
 
         return output_df, output_metadata
     
     def _linear_kinetic_energy(self, output_df: pd.DataFrame, output_metadata: Dict):
         # Caculate displacement for every timestep
-        output_df = output_df.assign(
-                linear_kinetic_energy=lambda x: (
-                    x["head_vel_pos_magnitude"]**2 * 1/2 * torso_legs_head_mass +
-                    x["left_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass +
-                    x["right_vel_pos_magnitude"]**2 * 1/2 * hand_arm_mass
-                )
-            )  
-    
+        output_df['linear_kinetic_energy'] = np.sqrt(
+            output_df['head_vel_pos_magnitude']**2 * 1/2 * torso_legs_head_mass + \
+                output_df['left_vel_pos_magnitude']**2 * 1/2 * hand_arm_mass + \
+                    output_df['right_vel_pos_magnitude']**2 * 1/2 * hand_arm_mass
+        )
+
         return output_df, output_metadata
     
     def _linear_power(self, output_df: pd.DataFrame, output_metadata: Dict):
-        # Caculate displacement for every timestep
-        output_df = output_df.assign(
-                linear_power=lambda x: (
-                    x["head_accel_pos_magnitude"]* x["head_vel_pos_magnitude"] * torso_legs_head_mass +
-                    x["left_accel_pos_magnitude"]* x["left_vel_pos_magnitude"] * hand_arm_mass +
-                    x["right_accel_pos_magnitude"]* x["right_vel_pos_magnitude"] * hand_arm_mass
-                )
-            )  
+
+        # Calculate linear power from position and velocity magnitudes        
+        output_df['linear_power'] = \
+            output_df["head_accel_pos_magnitude"]* output_df["head_vel_pos_magnitude"] * torso_legs_head_mass + \
+            output_df["left_accel_pos_magnitude"]* output_df["left_vel_pos_magnitude"] * hand_arm_mass + \
+            output_df["right_accel_pos_magnitude"]* output_df["right_vel_pos_magnitude"] * hand_arm_mass
+
     
         return output_df, output_metadata
 

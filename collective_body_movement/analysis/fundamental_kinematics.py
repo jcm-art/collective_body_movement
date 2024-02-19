@@ -155,21 +155,21 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         return output_df, output_metadata
     
     def _magnitude_lambda(self, output_df: pd.DataFrame, magnitude_field: str, fields: List[str]):
-        if len(fields) == 3:
-            output_df = output_df.assign(
-                magnitude_field_tmp=lambda x: (
-                    (x[fields[0]]**2 + x[fields[1]]**2 + x[fields[2]]**2)**0.5
-                )
-            )
-        elif len(fields) == 4:
-            output_df = output_df.assign(
-                magnitude_field_tmp=lambda x: (
-                    (x[fields[0]]**2 + x[fields[1]]**2 + x[fields[2]]**2 + x[fields[3]]**2)**0.5
-                )
-            ) 
 
-        # Rename temporary columns prior to returning
-        output_df.rename(columns={'magnitude_field_tmp':magnitude_field}, inplace=True)
+        # Add first three fields to dataframe
+        output_df[magnitude_field] = output_df[fields[0]]**2 + output_df[fields[1]]**2 + output_df[fields[2]]**2
+
+        if len(fields) == 4:
+            output_df[magnitude_field] += output_df[fields[3]]**2
+
+        # Check for negative values
+        if output_df[magnitude_field].min() <0:
+            print(f"The min and max of the {magnitude_field} is {output_df[magnitude_field].min()} and {output_df[magnitude_field].max()}")
+            assert False
+
+        # Take Square root to get magnitude
+        output_df[magnitude_field] = np.sqrt(output_df[magnitude_field])
+
         return output_df
 
     def _calculate_moment_arms(self, output_df: pd.DataFrame, output_metadata: Dict):
@@ -177,17 +177,17 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         return output_df, output_metadata
     
     def _calculate_xzplanar_moment_arm_mag(self, output_df: pd.DataFrame, output_metadata: Dict):
-        output_df = output_df.assign(
-                left_xzplanar_moment_arm_len=lambda x: (
-                    ((x["left_pos_x"]-x["head_pos_x"])**2 + (x["left_pos_z"]-x["head_pos_z"])**2)**0.5
-                )
-            )
         
-        output_df = output_df.assign(
-                right_xzplanar_moment_arm_len=lambda x: (
-                    ((x["right_pos_x"]-x["head_pos_x"])**2 + (x["right_pos_z"]-x["head_pos_z"])**2)**0.5
-                )
-            )
+        # Calculate moment arm length in xz plane
+        output_df['left_xzplanar_moment_arm_len'] = \
+            ((output_df["left_pos_x"]-output_df["head_pos_x"])**2 + \
+                (output_df["left_pos_z"]-output_df["head_pos_z"])**2)**0.5
+        
+        
+        output_df['right_xzplanar_moment_arm_len'] = \
+            ((output_df["right_pos_x"]-output_df["head_pos_x"])**2 + \
+                (output_df["right_pos_z"]-output_df["head_pos_z"])**2)**0.5
+        
         return output_df, output_metadata
 
 
@@ -198,7 +198,7 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
             new_column_name: str, 
             timestep: float):
         
-        df[new_column_name] = df[old_column_name].diff() / timestep
+        df[new_column_name] = df[old_column_name].diff() / df['timestamp'].diff()
 
         return df
 
@@ -207,17 +207,13 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
             output_df: pd.DataFrame, 
             new_col_name:str):
         
-        # Get data and max/min
-        # TODO (jcm-art): replace with more efficient implementation
-        data = output_df[new_col_name].to_numpy()
-        data.sort()
+        # Get get maximum value for clipping
         percentile_to_clip = 0.9
-        upper_bound_index = int(len(data)*percentile_to_clip)
-        upper_bound_val = data[upper_bound_index]
+        upper_bound_val = output_df[new_col_name].quantile(percentile_to_clip)
 
-        # Clip upper bound
-        output_df[new_col_name] = output_df[new_col_name].apply(
-            lambda x: upper_bound_val if x > upper_bound_val else x)
+        # Clip values in the 'values' column to the maximum value equal to the 90th percentile
+        output_df[new_col_name] = output_df[new_col_name].clip(upper=percentile_to_clip)
+
         
         return output_df
 
