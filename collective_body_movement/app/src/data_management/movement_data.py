@@ -66,5 +66,5 @@ class MovementDataManager:
 
     def get_updated_dataframe(self, user_dataset_selection, user_chapter_selection_static):
         # TODO(jcm-art): enable multiple dataset comparison
-        selected_dataset = self.movement_df_dict[user_dataset_selection[0]]
+        selected_dataset = self.movement_df_dict[user_dataset_selection]
         return selected_dataset[selected_dataset["chapitre"]==user_chapter_selection_static]
