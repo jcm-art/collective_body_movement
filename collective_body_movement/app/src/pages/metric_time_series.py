@@ -116,10 +116,9 @@ class MetricSeriesPage(StreamlitPage):
         st.header("Select a Dataset and Participant ID")
         dataset_options = self.mdm.get_dataset_IDs()
         # TODO (jcm-art): update options for participant ID based on dataset selection
-        self.user_dataset_selection = st.multiselect(
+        self.user_dataset_selection = st.selectbox(
             label="Select a dataset ID",
             options=dataset_options,
-            default=dataset_options[0]
         )
 
         #headset_options = self.mdm.get_actor_IDs(self.user_dataset_selection)
