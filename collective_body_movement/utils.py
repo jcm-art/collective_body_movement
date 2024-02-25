@@ -43,9 +43,9 @@ class CollectiveBodyBolt:
             outfile.write(json_object)
 
         # Save dataset metadata
-        for counter in range(len(self.output_metadata_list)):
-            single_dataset_metadata = self.output_metadata_list[counter]
-            dataset_id = list(single_dataset_metadata.keys())[0]
+        for single_dataset_metadata, dataset_to_save  in zip(self.output_metadata_list, self.output_df_list):
+            # Extract Dataset IT
+            dataset_id = single_dataset_metadata[list(single_dataset_metadata.keys())[0]]['cleaned_metadata']['dataset_id']
 
             json_output = self.output_path/f"{__class__.__name__}_{dataset_id}.json"
             with open(json_output,"w") as outfile:
@@ -53,9 +53,8 @@ class CollectiveBodyBolt:
                 json_object = json.dumps(single_dataset_metadata, indent = 6, sort_keys=True, default=str) 
                 outfile.write(json_object)
 
-        for counter in range(len(self.output_df_list)):
-            dataframe_output = self.output_path/f"{__class__.__name__}_{counter}.csv"
-            self.output_df_list[counter].to_csv(dataframe_output, index=True)
+            dataframe_output = self.output_path/f"{__class__.__name__}_{dataset_id}.csv"
+            dataset_to_save.to_csv(dataframe_output, index=True)
 
     def print_intermediate_metadata(self):
         # TODO - consider using logger
