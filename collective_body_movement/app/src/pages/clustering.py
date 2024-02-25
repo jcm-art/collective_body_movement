@@ -27,7 +27,6 @@ class ClusteringDevelopmentPage(StreamlitPage):
         # Get and display metric data 
         st.header("Metric Data")
         self.metrics = self._get_metrics_file()
-        st.write(self.metrics)
 
         # Extract metrics for clustering
         st.header("Clustering Metrics")
@@ -42,8 +41,20 @@ class ClusteringDevelopmentPage(StreamlitPage):
         # Drop or add columns from K-means clustering
         # Default values hand tuned based on clustering results
         algorithms_to_remove = []
-        default_algorithm_choices = list(set(self.all_algorithm_options) - set(algorithms_to_remove))
         
+        # Prefill by chapter 
+        chapter_filter = st.selectbox(
+            "Select Chapter", options=["1","2","3","No Chapter Specific","No Filter"],
+            index=4
+        )
+
+        prefilled_default = None
+        default_algorithm_choices = list(set(self.all_algorithm_options) - set(algorithms_to_remove))
+        if chapter_filter is not "No Filter" and chapter_filter is not "No Chapter Specific":
+            default_algorithm_choices = [string for string in default_algorithm_choices if "chapter_"+chapter_filter in string]
+        elif chapter_filter is "No Chapter Specific":
+            default_algorithm_choices = [string for string in default_algorithm_choices if "chapter_" not in string]
+
         algoprithm_metrics_selection = st.multiselect(
             label="Select algorithm metrics to include", 
             options=self.all_algorithm_options,
@@ -68,12 +79,21 @@ class ClusteringDevelopmentPage(StreamlitPage):
         st.header("Reduced Data by Cluster")
         self._plot_reduced_data_by_cluster(self.clustering_metric_df, self.kmeans, self.metrics_columns_to_include_in_clustering)
 
+        # Show correlation between factors and clusters
+        st.header("Cluster Correlation")
+        self._cluser_correlation(self.clustering_metric_df, self.metrics_columns_to_include_in_clustering)
+
         # Plot Metrics by Cluster
         st.header("Cluster Metric Individual Plots")
         self._plot_metrics_by_cluster(self.metrics_columns_to_include_in_clustering)
 
         # Examine Outlier
         self._examine_outlier()
+
+        # Extra information 
+        st.header("Additional Details")
+        st.write(self.metrics)
+
 
     def _get_metrics_file(self):
         metrics_file = st.file_uploader("Upload metrics file", type=["json"])
@@ -142,6 +162,17 @@ class ClusteringDevelopmentPage(StreamlitPage):
 
         return input_df, kmeans
     
+    def _cluser_correlation(self, input_df, kmeans_columns):
+        # Calculate correlation between each feature and the cluster labels
+        kmeans_columns.append('cluster')
+        filtered_df = input_df[kmeans_columns]
+        correlation_with_clusters = filtered_df.corr()['cluster'].drop('cluster')  # Exclude Cluster column from correlation calculation
+        correlation_with_clusters = correlation_with_clusters.sort_values(ascending=False)
+
+        # Print correlation values
+        st.write("Correlation between each feature and the clusters:")
+        st.write(correlation_with_clusters)
+    
     def _plot_reduced_data_by_cluster(self, clustering_metric_df, kmeans, kmeans_columns):
         
         # Drop columns from K-means clustering
@@ -193,8 +224,14 @@ class ClusteringDevelopmentPage(StreamlitPage):
                 marker=dict(
                     size=8,
                     color=self.clustering_metric_df['cluster'],  # Color points based on values in column D
-                    opacity=0.8
-                )
+                    opacity=0.8,
+                    colorscale='Viridis',
+                    colorbar=dict(
+                        thickness=20,
+                        tickvals=list(range(int(self.clustering_metric_df['cluster'].max()) + 1)),  # Integer tick values
+                        ticktext=list(range(int(self.clustering_metric_df['cluster'].max()) + 1))  # Integer tick text
+                    )               
+                ),
             )
 
             clustering_data.append(tmp_scatter)
