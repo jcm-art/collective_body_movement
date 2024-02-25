@@ -11,6 +11,8 @@ from ..utils import CollectiveBodyBolt
 
 class FundamentalKinematicsBolt(CollectiveBodyBolt):
 
+    MAX_MOMENT_ARM_LEN = (2.5)/2*1.1 # Based on max expected human arm length + margin
+
     def __init__(self, output_directory_path: str, use_clipping: bool=False, save_intermediate_output: bool=False) -> None:
         super().__init__(output_directory_path, save_intermediate_output)
 
@@ -187,6 +189,11 @@ class FundamentalKinematicsBolt(CollectiveBodyBolt):
         output_df['right_xzplanar_moment_arm_len'] = \
             ((output_df["right_pos_x"]-output_df["head_pos_x"])**2 + \
                 (output_df["right_pos_z"]-output_df["head_pos_z"])**2)**0.5
+        
+        # Clip values to eliminate issues with headset and controller separation (setup, teardown, dropped, etc)
+        if self.use_clipping:
+            output_df['left_xzplanar_moment_arm_len'] = output_df["left_xzplanar_moment_arm_len"].clip(upper=self.MAX_MOMENT_ARM_LEN)
+            output_df['right_xzplanar_moment_arm_len'] = output_df["right_xzplanar_moment_arm_len"].clip(upper=self.MAX_MOMENT_ARM_LEN)
         
         return output_df, output_metadata
 

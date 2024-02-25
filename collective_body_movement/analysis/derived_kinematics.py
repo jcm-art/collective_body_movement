@@ -92,8 +92,7 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         output_df['cartesian_displacement'] = np.sqrt(
             output_df['head_pos_x'].diff()**2 + output_df['head_pos_y'].diff()**2 + output_df['head_pos_z'].diff()**2
         )
-        output_df['cartesian_displacement'].iloc[0] = 0  # Set distance traveled at first row as 0
-   
+        output_df.loc[0, 'cartesian_displacement'] = 0  # Set distance traveled at first row as 0   
         
         # Calculate cumulative sum of displacement
         output_df['total_cartesian_distance'] = output_df['cartesian_displacement'].cumsum()
@@ -107,7 +106,7 @@ class DerivedKinematicsBolt(CollectiveBodyBolt):
         output_df['rotational_displacement'] = np.sqrt(
             output_df['head_rot_i'].diff()**2 + output_df['head_rot_j'].diff()**2 + output_df['head_rot_k'].diff()**2 + output_df['head_rot_l'].diff()**2
         )
-        output_df['rotational_displacement'].iloc[0] = 0  # Set distance traveled at first row as 0
+        output_df.loc[0, 'rotational_displacement'] = 0  # Set distance traveled at first row as 0
    
         
         # Calculate cumulative sum of displacement

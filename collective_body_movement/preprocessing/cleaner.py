@@ -279,6 +279,7 @@ class DataCleanerBolt(CollectiveBodyBolt):
     def _import_movement_data(self, path, data_df, data_summary):
         # Run pre-validation on dataframe
         data_summary = self._pre_validate_dataframe(data_df, data_summary)
+        data_df = self._add_dataset_id(data_df, data_summary)
 
         # Check if dataframe is valid
         if data_summary.get_data_parameter("is_valid") == False:
@@ -363,9 +364,12 @@ class DataCleanerBolt(CollectiveBodyBolt):
         # TODO - implement check for single data source in session
         pass
 
+    def _add_dataset_id(self, df, data_summary):
+        df['dataset_id'] = data_summary.get_data_parameter('dataset_id')
+        return df
+
     def _clean_dataframe(self, df, data_summary):
         # Remove incorrect header rows and missing data
-        df['dataset_id'] = data_summary.get_data_parameter('dataset_id')
         df['headset_number'] = data_summary.get_data_parameter('headset_number')
         df['session_number'] = data_summary.get_data_parameter('session_number_path')
         df = df.dropna()
