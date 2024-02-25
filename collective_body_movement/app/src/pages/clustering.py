@@ -11,8 +11,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-
 import streamlit as st
 
 from ..utils import StreamlitPage
@@ -244,31 +242,3 @@ class ClusteringDevelopmentPage(StreamlitPage):
         fig.update_layout(title='Sorted Single Row Values with Original Column Names', xaxis_title='Columns', yaxis_title='Values')
         
         st.write(fig)
-
-    def perform_lda(X, y):
-        """
-        Perform Linear Discriminant Analysis (LDA) on the given dataset.
-
-        Parameters:
-        X : array-like, shape (n_samples, n_features)
-            The input samples.
-        y : array-like, shape (n_samples,)
-            The target values.
-
-        Returns:
-        lda_model : LinearDiscriminantAnalysis object
-            The trained LDA model.
-        feature_importance : dict
-            Dictionary containing the importance of different features.
-        """
-        lda_model = LinearDiscriminantAnalysis()
-        lda_model.fit(X, y)
-
-        # Compute the importance of different features
-        feature_importance = {}
-        for i, importance in enumerate(lda_model.coef_[0]):
-            feature_importance[f'Feature_{i+1}'] = np.abs(importance)
-
-        st.write(feature_importance)
-
-        return lda_model, feature_importance
